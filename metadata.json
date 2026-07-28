@@ -1,0 +1,6 @@
+{
+  "name": "Sistem Pangkalan Minyak Tanah Nagekeo",
+  "description": "Aplikasi pengelolaan pangkalan minyak tanah, verifikasi perizinan, dan pembuat otomatis Surat Permohonan & Surat Pernyataan PT. Putra Ngada Energi (Nagekeo, NTT).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
