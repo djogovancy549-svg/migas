@@ -13,6 +13,8 @@ import {
 import { Pangkalan, UploadedDocument } from '../types';
 import { FileSpreadsheet, HardDrive, LogIn, LogOut, CheckCircle2, Loader2, ExternalLink, AlertCircle, Trash2 } from 'lucide-react';
 
+import { safeLocalStorage } from '../lib/storage';
+
 interface GoogleSyncBarProps {
   pangkalanList: Pangkalan[];
   uploadedDocs: UploadedDocument[];
@@ -31,10 +33,10 @@ export const GoogleSyncBar: React.FC<GoogleSyncBarProps> = ({
   const [isSyncingDrive, setIsSyncingDrive] = useState<boolean>(false);
 
   const [sheetUrl, setSheetUrl] = useState<string | null>(() => {
-    return localStorage.getItem('pne_nagekeo_google_sheet_url');
+    return safeLocalStorage.getItem('pne_nagekeo_google_sheet_url');
   });
   const [sheetId, setSheetId] = useState<string | null>(() => {
-    return localStorage.getItem('pne_nagekeo_google_sheet_id');
+    return safeLocalStorage.getItem('pne_nagekeo_google_sheet_id');
   });
 
   const [notification, setNotification] = useState<{
@@ -106,8 +108,8 @@ export const GoogleSyncBar: React.FC<GoogleSyncBarProps> = ({
       const result = await exportToGoogleSheets(accessToken, pangkalanList, sheetId || undefined);
       setSheetId(result.spreadsheetId);
       setSheetUrl(result.spreadsheetUrl);
-      localStorage.setItem('pne_nagekeo_google_sheet_id', result.spreadsheetId);
-      localStorage.setItem('pne_nagekeo_google_sheet_url', result.spreadsheetUrl);
+      safeLocalStorage.setItem('pne_nagekeo_google_sheet_id', result.spreadsheetId);
+      safeLocalStorage.setItem('pne_nagekeo_google_sheet_url', result.spreadsheetUrl);
 
       setNotification({
         type: 'success',

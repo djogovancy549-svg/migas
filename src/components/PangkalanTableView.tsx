@@ -155,7 +155,7 @@ export const PangkalanTableView: React.FC<PangkalanTableViewProps> = ({
           {selectedKecamatan !== 'ALL' && <span> di Kecamatan <strong className="text-amber-400">{selectedKecamatan}</strong></span>}
         </p>
         <p className="hidden sm:block text-slate-500 font-mono">
-          PT. Putra Ngada Energi • Kab. Nagekeo
+          Pemda Kab. Nagekeo • Bagian Perekonomian & SDA
         </p>
       </div>
 

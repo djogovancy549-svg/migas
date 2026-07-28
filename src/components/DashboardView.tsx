@@ -50,8 +50,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             Sistem Informasi & Perizinan Pangkalan Minyak Tanah
           </h2>
           <p className="text-sm text-slate-100/90 leading-relaxed">
-            Terintegrasi dengan data resmi <strong>PT. Putra Ngada Energi (Nagekeo)</strong>. 
-            Kelola 120 pangkalan, pantau persyaratan izin Bagian Perekonomian Setda Nagekeo, dan cetak dokumen resmi otomatis.
+            Sistem pengawasan dan pelayanan rekomendasi pangkalan minyak tanah bersubsidi <strong>Pemerintah Kabupaten Nagekeo</strong> (Bagian Perekonomian dan SDA Setda Nagekeo) bekerjasama dengan agen penyalur resmi <strong>PT. Putra Ngada Energi</strong>.
           </p>
 
           <div className="pt-2 flex flex-wrap gap-3">

@@ -16,18 +16,25 @@ interface PersyaratanChecklistViewProps {
 }
 
 export const PersyaratanChecklistView: React.FC<PersyaratanChecklistViewProps> = ({
-  pangkalanList,
-  checklistData,
-  masterRequirements,
-  uploadedDocs,
-  isAdminMode,
+  pangkalanList = [],
+  checklistData = {},
+  masterRequirements = [],
+  uploadedDocs = [],
+  isAdminMode = false,
   onRequestAdminAuth,
   onUpdateChecklist,
   onOpenUploadModal,
   onAddMasterRequirement,
   onDeleteMasterRequirement,
 }) => {
-  const [selectedPangkalanId, setSelectedPangkalanId] = useState<string>(pangkalanList[0]?.id || '');
+  const safePangkalanList = pangkalanList || [];
+  const safeMasterReqs = masterRequirements || [];
+  const safeUploadedDocs = uploadedDocs || [];
+  const safeChecklistData = checklistData || {};
+
+  const [selectedPangkalanId, setSelectedPangkalanId] = useState<string>(
+    safePangkalanList[0]?.id || ''
+  );
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddReqForm, setShowAddReqForm] = useState(false);
 
@@ -37,9 +44,13 @@ export const PersyaratanChecklistView: React.FC<PersyaratanChecklistViewProps> =
   const [newReqMandatory, setNewReqMandatory] = useState(true);
   const [newReqDesc, setNewReqDesc] = useState('');
 
-  const currentPangkalan = pangkalanList.find((p) => p.id === selectedPangkalanId) || pangkalanList[0];
-  const currentStatus = checklistData[selectedPangkalanId] || {
-    pangkalanId: selectedPangkalanId,
+  const currentPangkalan =
+    safePangkalanList.find((p) => p && p.id === selectedPangkalanId) || safePangkalanList[0];
+
+  const activePangkalanId = currentPangkalan?.id || '';
+
+  const currentStatus = (activePangkalanId && safeChecklistData[activePangkalanId]) || {
+    pangkalanId: activePangkalanId,
     jenis: 'Perpanjangan',
     suratPermohonan: true,
     ktp: true,
@@ -51,20 +62,21 @@ export const PersyaratanChecklistView: React.FC<PersyaratanChecklistViewProps> =
   };
 
   const handleToggle = (key: string) => {
-    if (!currentStatus) return;
+    if (!activePangkalanId || !currentStatus) return;
     const updated = {
       ...currentStatus,
       [key]: !currentStatus[key],
     };
-    onUpdateChecklist(selectedPangkalanId, updated);
+    onUpdateChecklist(activePangkalanId, updated);
   };
 
   const handleJenisChange = (jenis: JenisPermohonan) => {
+    if (!activePangkalanId || !currentStatus) return;
     const updated: PersyaratanStatus = {
       ...currentStatus,
       jenis,
     };
-    onUpdateChecklist(selectedPangkalanId, updated);
+    onUpdateChecklist(activePangkalanId, updated);
   };
 
   const handleCreateMasterReq = (e: React.FormEvent) => {
@@ -85,18 +97,18 @@ export const PersyaratanChecklistView: React.FC<PersyaratanChecklistViewProps> =
   };
 
   // Filter master requirements for active type
-  const activeChecklistItems = masterRequirements.filter(
-    (item) => item.requiredFor === 'Semua' || item.requiredFor === currentStatus.jenis
+  const activeChecklistItems = safeMasterReqs.filter(
+    (item) => item && (item.requiredFor === 'Semua' || item.requiredFor === (currentStatus?.jenis || 'Perpanjangan'))
   );
 
   const completedCount = activeChecklistItems.filter(
-    (item) => !!currentStatus[item.key]
+    (item) => !!currentStatus?.[item.key]
   ).length;
   const totalCount = activeChecklistItems.length;
-  const isAllComplete = completedCount === totalCount;
+  const isAllComplete = totalCount > 0 && completedCount === totalCount;
 
   // Uploaded docs for selected pangkalan
-  const currentUploadedDocs = uploadedDocs.filter((d) => d.pangkalanId === currentPangkalan?.id);
+  const currentUploadedDocs = safeUploadedDocs.filter((d) => d && d.pangkalanId === activePangkalanId);
 
   return (
     <div className="space-y-6">
@@ -261,22 +273,23 @@ export const PersyaratanChecklistView: React.FC<PersyaratanChecklistViewProps> =
           </div>
 
           <div className="space-y-1.5 max-h-[500px] overflow-y-auto pr-1 text-xs">
-            {pangkalanList
+            {safePangkalanList
               .filter(
                 (p) =>
-                  p.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  p.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  p.kecamatan.toLowerCase().includes(searchQuery.toLowerCase())
+                  p &&
+                  ((p.nama || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    (p.id || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    (p.kecamatan || '').toLowerCase().includes(searchQuery.toLowerCase()))
               )
               .map((p) => {
                 const isSelected = p.id === selectedPangkalanId;
-                const status = checklistData[p.id];
-                const activeReqs = masterRequirements.filter(
-                  (m) => m.requiredFor === 'Semua' || m.requiredFor === (status?.jenis || 'Perpanjangan')
+                const status = safeChecklistData[p.id];
+                const activeReqs = safeMasterReqs.filter(
+                  (m) => m && (m.requiredFor === 'Semua' || m.requiredFor === (status?.jenis || 'Perpanjangan'))
                 );
                 const doneCount = activeReqs.filter((m) => !!status?.[m.key]).length;
                 const itemsCount = activeReqs.length;
-                const isComplete = doneCount === itemsCount;
+                const isComplete = itemsCount > 0 && doneCount === itemsCount;
 
                 return (
                   <button
@@ -289,9 +302,9 @@ export const PersyaratanChecklistView: React.FC<PersyaratanChecklistViewProps> =
                     }`}
                   >
                     <div className="truncate mr-2">
-                      <p className="truncate text-xs">{p.nama}</p>
+                      <p className="truncate text-xs">{p.nama || 'Pangkalan'}</p>
                       <p className={`text-[10px] ${isSelected ? 'text-slate-900 font-semibold' : 'text-slate-400'}`}>
-                        {p.id} • Kec. {p.kecamatan}
+                        {p.id} • Kec. {p.kecamatan || '-'}
                       </p>
                     </div>
 
@@ -316,55 +329,63 @@ export const PersyaratanChecklistView: React.FC<PersyaratanChecklistViewProps> =
 
         {/* Right Active Checklist Form */}
         <div className="lg:col-span-2 bg-slate-900/80 rounded-2xl border border-slate-800 shadow-xl p-6 space-y-6 backdrop-blur-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                  {currentPangkalan.id}
-                </span>
-                <span className="text-xs text-slate-400">Kel. {currentPangkalan.kelurahan}, Kec. {currentPangkalan.kecamatan}</span>
-              </div>
-              <h3 className="text-lg font-black text-white mt-1">{currentPangkalan.nama}</h3>
+          {!currentPangkalan ? (
+            <div className="text-center py-12 space-y-3">
+              <FolderX className="w-12 h-12 text-amber-400 mx-auto" />
+              <h3 className="text-base font-bold text-white">Belum Ada Pangkalan Terpilih</h3>
+              <p className="text-xs text-slate-400">Silakan tambahkan pangkalan baru di menu Data Pangkalan.</p>
             </div>
-
-            <div className="flex items-center gap-2">
-              {/* Upload / Folder Persyaratan Trigger */}
-              {isAdminMode ? (
-                <button
-                  onClick={() => onOpenUploadModal(currentPangkalan)}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 font-bold rounded-xl text-xs transition cursor-pointer border shadow-md ${
-                    currentUploadedDocs.length > 0
-                      ? 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border-emerald-500/40'
-                      : 'bg-slate-800 hover:bg-slate-700 text-slate-400 border-slate-700'
-                  }`}
-                  title="Buka Folder Berkas Pangkalan"
-                >
-                  {currentUploadedDocs.length > 0 ? (
-                    <>
-                      <FolderCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                      <span>Folder Berkas: Ada File ({currentUploadedDocs.length})</span>
-                    </>
-                  ) : (
-                    <>
-                      <FolderX className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                      <span>Folder Berkas: Kosong</span>
-                    </>
-                  )}
-                </button>
-              ) : (
-                <button
-                  onClick={() => onOpenUploadModal(currentPangkalan)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold rounded-xl text-xs transition cursor-pointer shadow-md shadow-blue-500/20"
-                >
-                  <Upload className="w-3.5 h-3.5" />
-                  <span>Upload Berkas (PDF/Foto)</span>
-                  {currentUploadedDocs.length > 0 && (
-                    <span className="bg-white text-slate-950 text-[10px] px-1.5 py-0.2 rounded-full font-bold">
-                      {currentUploadedDocs.length}
+          ) : (
+            <>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      {currentPangkalan.id}
                     </span>
+                    <span className="text-xs text-slate-400">Kel. {currentPangkalan.kelurahan || '-'}, Kec. {currentPangkalan.kecamatan || '-'}</span>
+                  </div>
+                  <h3 className="text-lg font-black text-white mt-1">{currentPangkalan.nama || 'Pangkalan'}</h3>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {/* Upload / Folder Persyaratan Trigger */}
+                  {isAdminMode ? (
+                    <button
+                      onClick={() => currentPangkalan && onOpenUploadModal(currentPangkalan)}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 font-bold rounded-xl text-xs transition cursor-pointer border shadow-md ${
+                        currentUploadedDocs.length > 0
+                          ? 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border-emerald-500/40'
+                          : 'bg-slate-800 hover:bg-slate-700 text-slate-400 border-slate-700'
+                      }`}
+                      title="Buka Folder Berkas Pangkalan"
+                    >
+                      {currentUploadedDocs.length > 0 ? (
+                        <>
+                          <FolderCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          <span>Folder Berkas: Ada File ({currentUploadedDocs.length})</span>
+                        </>
+                      ) : (
+                        <>
+                          <FolderX className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                          <span>Folder Berkas: Kosong</span>
+                        </>
+                      )}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => currentPangkalan && onOpenUploadModal(currentPangkalan)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold rounded-xl text-xs transition cursor-pointer shadow-md shadow-blue-500/20"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Upload Berkas (PDF/Foto)</span>
+                      {currentUploadedDocs.length > 0 && (
+                        <span className="bg-white text-slate-950 text-[10px] px-1.5 py-0.2 rounded-full font-bold">
+                          {currentUploadedDocs.length}
+                        </span>
+                      )}
+                    </button>
                   )}
-                </button>
-              )}
 
               {/* Category Toggle */}
               <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
@@ -515,8 +536,10 @@ export const PersyaratanChecklistView: React.FC<PersyaratanChecklistViewProps> =
               })}
             </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
     </div>
+  </div>
+</div>
   );
 };

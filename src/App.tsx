@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Pangkalan, PersyaratanStatus, MasterRequirementItem, UploadedDocument } from './types';
 import { INITIAL_PANGKALAN_LIST, INITIAL_CHECKLIST_STATUS } from './data/pangkalanData';
 import { INITIAL_MASTER_REQUIREMENTS } from './data/masterRequirements';
+import { safeLocalStorage } from './lib/storage';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Header } from './components/Header';
 import { TabNavigation, TabType } from './components/TabNavigation';
 import { GoogleSyncBar } from './components/GoogleSyncBar';
@@ -15,12 +17,13 @@ import { AdminPinModal } from './components/AdminPinModal';
 import { UploadPersyaratanModal } from './components/UploadPersyaratanModal';
 
 export default function App() {
-  // Load initial dataset or restore from localStorage
+  // Load initial dataset or restore from safeLocalStorage
   const [pangkalanList, setPangkalanList] = useState<Pangkalan[]>(() => {
-    const saved = localStorage.getItem('pne_nagekeo_pangkalan_data');
+    const saved = safeLocalStorage.getItem('pne_nagekeo_pangkalan_data');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       } catch (e) {
         console.error('Failed to parse saved pangkalan data', e);
       }
@@ -29,10 +32,11 @@ export default function App() {
   });
 
   const [checklistData, setChecklistData] = useState<Record<string, PersyaratanStatus>>(() => {
-    const saved = localStorage.getItem('pne_nagekeo_checklist_data');
+    const saved = safeLocalStorage.getItem('pne_nagekeo_checklist_data');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') return parsed;
       } catch (e) {
         console.error('Failed to parse saved checklist data', e);
       }
@@ -42,10 +46,11 @@ export default function App() {
 
   // Master requirements state (editable by Admin)
   const [masterRequirements, setMasterRequirements] = useState<MasterRequirementItem[]>(() => {
-    const saved = localStorage.getItem('pne_nagekeo_master_reqs');
+    const saved = safeLocalStorage.getItem('pne_nagekeo_master_reqs');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       } catch (e) {
         console.error('Failed to parse saved master requirements', e);
       }
@@ -55,10 +60,11 @@ export default function App() {
 
   // Uploaded documents state
   const [uploadedDocs, setUploadedDocs] = useState<UploadedDocument[]>(() => {
-    const saved = localStorage.getItem('pne_nagekeo_uploaded_docs');
+    const saved = safeLocalStorage.getItem('pne_nagekeo_uploaded_docs');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
       } catch (e) {
         console.error('Failed to parse saved uploaded docs', e);
       }
@@ -68,7 +74,7 @@ export default function App() {
 
   // Admin Mode state (protected by PIN migas2026)
   const [isAdminMode, setIsAdminMode] = useState<boolean>(() => {
-    return localStorage.getItem('pne_nagekeo_is_admin') === 'true';
+    return safeLocalStorage.getItem('pne_nagekeo_is_admin') === 'true';
   });
   const [isAdminPinModalOpen, setIsAdminPinModalOpen] = useState<boolean>(false);
 
@@ -76,25 +82,25 @@ export default function App() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState<boolean>(false);
   const [uploadTargetPangkalan, setUploadTargetPangkalan] = useState<Pangkalan | null>(null);
 
-  // Save changes to localStorage
+  // Save changes to safeLocalStorage
   useEffect(() => {
-    localStorage.setItem('pne_nagekeo_pangkalan_data', JSON.stringify(pangkalanList));
+    safeLocalStorage.setItem('pne_nagekeo_pangkalan_data', JSON.stringify(pangkalanList));
   }, [pangkalanList]);
 
   useEffect(() => {
-    localStorage.setItem('pne_nagekeo_checklist_data', JSON.stringify(checklistData));
+    safeLocalStorage.setItem('pne_nagekeo_checklist_data', JSON.stringify(checklistData));
   }, [checklistData]);
 
   useEffect(() => {
-    localStorage.setItem('pne_nagekeo_master_reqs', JSON.stringify(masterRequirements));
+    safeLocalStorage.setItem('pne_nagekeo_master_reqs', JSON.stringify(masterRequirements));
   }, [masterRequirements]);
 
   useEffect(() => {
-    localStorage.setItem('pne_nagekeo_uploaded_docs', JSON.stringify(uploadedDocs));
+    safeLocalStorage.setItem('pne_nagekeo_uploaded_docs', JSON.stringify(uploadedDocs));
   }, [uploadedDocs]);
 
   useEffect(() => {
-    localStorage.setItem('pne_nagekeo_is_admin', isAdminMode ? 'true' : 'false');
+    safeLocalStorage.setItem('pne_nagekeo_is_admin', isAdminMode ? 'true' : 'false');
   }, [isAdminMode]);
 
   // Tab State
@@ -132,9 +138,9 @@ export default function App() {
       setPangkalanList([]);
       setChecklistData({});
       setUploadedDocs([]);
-      localStorage.removeItem('pne_nagekeo_pangkalan_data');
-      localStorage.removeItem('pne_nagekeo_checklist_data');
-      localStorage.removeItem('pne_nagekeo_uploaded_docs');
+      safeLocalStorage.removeItem('pne_nagekeo_pangkalan_data');
+      safeLocalStorage.removeItem('pne_nagekeo_checklist_data');
+      safeLocalStorage.removeItem('pne_nagekeo_uploaded_docs');
     }
   };
 
@@ -210,9 +216,16 @@ export default function App() {
       });
 
       setChecklistData((prev) => {
-        const current = prev[pangkalanId] || {
+        const current: PersyaratanStatus = prev[pangkalanId] || {
           pangkalanId,
           jenis: 'Perpanjangan',
+          suratPermohonan: true,
+          ktp: true,
+          npwp: true,
+          nib: true,
+          sku: true,
+          rekomendasiSebelumnya: true,
+          suratPernyataan: true,
         };
         return {
           ...prev,
@@ -279,58 +292,60 @@ export default function App() {
           />
         </div>
 
-        {activeTab === 'dashboard' && (
-          <DashboardView
-            pangkalanList={pangkalanList}
-            onSelectPangkalanForLetter={handleSelectPangkalanForLetter}
-            onGoToTab={(tab) => setActiveTab(tab)}
-          />
-        )}
+        <ErrorBoundary fallbackTitle="Kendala Memuat Menu Ceklist Persyaratan">
+          {activeTab === 'dashboard' && (
+            <DashboardView
+              pangkalanList={pangkalanList}
+              onSelectPangkalanForLetter={handleSelectPangkalanForLetter}
+              onGoToTab={(tab) => setActiveTab(tab)}
+            />
+          )}
 
-        {activeTab === 'pangkalan' && (
-          <PangkalanTableView
-            pangkalanList={pangkalanList}
-            uploadedDocsCountMap={uploadedDocsCountMap}
-            isAdminMode={isAdminMode}
-            onSelectPangkalanForLetter={handleSelectPangkalanForLetter}
-            onEditPangkalan={(p) => setModalState({ isOpen: true, mode: 'edit', pangkalan: p })}
-            onDeletePangkalan={handleDeletePangkalan}
-            onAddNewPangkalan={() => setModalState({ isOpen: true, mode: 'add', pangkalan: null })}
-            onOpenDetail={(p) => setModalState({ isOpen: true, mode: 'detail', pangkalan: p })}
-            onOpenUploadModal={handleOpenUploadModal}
-          />
-        )}
+          {activeTab === 'pangkalan' && (
+            <PangkalanTableView
+              pangkalanList={pangkalanList}
+              uploadedDocsCountMap={uploadedDocsCountMap}
+              isAdminMode={isAdminMode}
+              onSelectPangkalanForLetter={handleSelectPangkalanForLetter}
+              onEditPangkalan={(p) => setModalState({ isOpen: true, mode: 'edit', pangkalan: p })}
+              onDeletePangkalan={handleDeletePangkalan}
+              onAddNewPangkalan={() => setModalState({ isOpen: true, mode: 'add', pangkalan: null })}
+              onOpenDetail={(p) => setModalState({ isOpen: true, mode: 'detail', pangkalan: p })}
+              onOpenUploadModal={handleOpenUploadModal}
+            />
+          )}
 
-        {activeTab === 'surat-permohonan' && (
-          <SuratPermohonanView
-            pangkalanList={pangkalanList}
-            selectedPangkalan={selectedPangkalanForLetter}
-            onSavePangkalan={handleSavePangkalan}
-          />
-        )}
+          {activeTab === 'surat-permohonan' && (
+            <SuratPermohonanView
+              pangkalanList={pangkalanList}
+              selectedPangkalan={selectedPangkalanForLetter}
+              onSavePangkalan={handleSavePangkalan}
+            />
+          )}
 
-        {activeTab === 'surat-pernyataan' && (
-          <SuratPernyataanView
-            pangkalanList={pangkalanList}
-            selectedPangkalan={selectedPangkalanForLetter}
-            onSavePangkalan={handleSavePangkalan}
-          />
-        )}
+          {activeTab === 'surat-pernyataan' && (
+            <SuratPernyataanView
+              pangkalanList={pangkalanList}
+              selectedPangkalan={selectedPangkalanForLetter}
+              onSavePangkalan={handleSavePangkalan}
+            />
+          )}
 
-        {activeTab === 'persyaratan' && (
-          <PersyaratanChecklistView
-            pangkalanList={pangkalanList}
-            checklistData={checklistData}
-            masterRequirements={masterRequirements}
-            uploadedDocs={uploadedDocs}
-            isAdminMode={isAdminMode}
-            onRequestAdminAuth={() => setIsAdminPinModalOpen(true)}
-            onUpdateChecklist={handleUpdateChecklist}
-            onOpenUploadModal={handleOpenUploadModal}
-            onAddMasterRequirement={handleAddMasterRequirement}
-            onDeleteMasterRequirement={handleDeleteMasterRequirement}
-          />
-        )}
+          {activeTab === 'persyaratan' && (
+            <PersyaratanChecklistView
+              pangkalanList={pangkalanList}
+              checklistData={checklistData}
+              masterRequirements={masterRequirements}
+              uploadedDocs={uploadedDocs}
+              isAdminMode={isAdminMode}
+              onRequestAdminAuth={() => setIsAdminPinModalOpen(true)}
+              onUpdateChecklist={handleUpdateChecklist}
+              onOpenUploadModal={handleOpenUploadModal}
+              onAddMasterRequirement={handleAddMasterRequirement}
+              onDeleteMasterRequirement={handleDeleteMasterRequirement}
+            />
+          )}
+        </ErrorBoundary>
       </main>
 
       {/* Footer */}
