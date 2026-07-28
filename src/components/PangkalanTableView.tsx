@@ -1,12 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { Pangkalan, RekomendasiPerizinan } from '../types';
-import { Search, Filter, Download, Plus, FileText, Award, Eye, Edit, Trash2, MapPin, Building, ChevronLeft, ChevronRight, Upload, Paperclip, Store, FolderCheck, FolderX, FolderOpen, CheckCircle2 } from 'lucide-react';
+import { Search, Filter, Download, Plus, FileText, Award, Eye, Edit, Trash2, MapPin, Building, ChevronLeft, ChevronRight, Upload, Paperclip, Store, FolderCheck, FolderX, FolderOpen, CheckCircle2, BellRing, FileSpreadsheet } from 'lucide-react';
 
 interface PangkalanTableViewProps {
   pangkalanList: Pangkalan[];
   uploadedDocsCountMap?: Record<string, number>;
   rekomendasiMap?: Record<string, RekomendasiPerizinan>;
   isAdminMode?: boolean;
+  pendingUnsyncedNotice?: string | null;
   onSelectPangkalanForLetter: (pangkalan: Pangkalan, letterType: 'permohonan' | 'pernyataan') => void;
   onEditPangkalan: (pangkalan: Pangkalan) => void;
   onDeletePangkalan: (id: string) => void;
@@ -21,6 +22,7 @@ export const PangkalanTableView: React.FC<PangkalanTableViewProps> = ({
   uploadedDocsCountMap = {},
   rekomendasiMap = {},
   isAdminMode = false,
+  pendingUnsyncedNotice,
   onSelectPangkalanForLetter,
   onEditPangkalan,
   onDeletePangkalan,
@@ -89,6 +91,31 @@ export const PangkalanTableView: React.FC<PangkalanTableViewProps> = ({
 
   return (
     <div className="space-y-4">
+      {/* Admin Notice Banner for Unsynced Data */}
+      {isAdminMode && pendingUnsyncedNotice && (
+        <div className="bg-amber-500/15 border-2 border-amber-500 text-amber-200 p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-lg">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-amber-500/20 rounded-xl shrink-0">
+              <BellRing className="w-5 h-5 text-amber-400" />
+            </div>
+            <div>
+              <p className="font-black text-amber-300 text-sm">⚠️ PERHATIAN ADMIN PEMDA:</p>
+              <p className="text-amber-100 mt-0.5">{pendingUnsyncedNotice}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              const syncElem = document.getElementById('google-sync-bar');
+              if (syncElem) syncElem.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-4 py-2 rounded-xl text-xs transition cursor-pointer shrink-0 flex items-center gap-1.5 touch-manipulation"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-slate-950" />
+            <span>Simpan ke Google Sheet</span>
+          </button>
+        </div>
+      )}
+
       {/* Search & Filter Header Bar */}
       <div className="bg-slate-900 border border-slate-800 p-4 sm:p-5 rounded-2xl shadow-xl space-y-3 sm:space-y-0 sm:flex sm:items-center sm:justify-between sm:gap-4">
         <div className="flex-1 flex flex-col sm:flex-row gap-3">

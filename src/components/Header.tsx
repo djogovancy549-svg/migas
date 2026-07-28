@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building2, MapPin, Printer, ShieldCheck, LogOut, Lock, Flame, Home } from 'lucide-react';
+import { Building2, MapPin, Printer, ShieldCheck, LogOut, Lock, Flame, Home, BellRing } from 'lucide-react';
 import { PEMDA_INFO } from '../data/pangkalanData';
 
 interface HeaderProps {
@@ -7,6 +7,7 @@ interface HeaderProps {
   totalKecamatan: number;
   isAdminMode: boolean;
   isAgenMode: boolean;
+  pendingUnsyncedNotice?: string | null;
   onRequestAdminAuth: () => void;
   onRequestAgenAuth: () => void;
   onExitAdminMode: () => void;
@@ -19,6 +20,7 @@ export const Header: React.FC<HeaderProps> = ({
   totalPangkalan,
   isAdminMode,
   isAgenMode,
+  pendingUnsyncedNotice,
   onRequestAdminAuth,
   onRequestAgenAuth,
   onExitAdminMode,
@@ -65,6 +67,21 @@ export const Header: React.FC<HeaderProps> = ({
                     <Lock className="w-3 h-3 text-amber-400" />
                     <span>Mode Pemohon / Public</span>
                   </span>
+                )}
+
+                {/* Unsynced Data Alert Badge */}
+                {pendingUnsyncedNotice && (
+                  <button
+                    onClick={() => {
+                      const syncElem = document.getElementById('google-sync-bar');
+                      if (syncElem) syncElem.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-amber-500 text-slate-950 border border-amber-300 flex items-center gap-1 cursor-pointer hover:bg-amber-400 transition shadow-sm touch-manipulation"
+                    title="Ada Data Baru! Tekan untuk simpan ke Google Sheet"
+                  >
+                    <BellRing className="w-3 h-3 text-slate-950" />
+                    <span>⚠️ Ada Data Baru! (Simpan ke Google Sheet)</span>
+                  </button>
                 )}
               </div>
 

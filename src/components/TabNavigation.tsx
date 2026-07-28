@@ -35,6 +35,7 @@ interface TabNavigationProps {
   isAdminMode: boolean;
   isAgenMode: boolean;
   licensedCount?: number;
+  hasPendingNotice?: boolean;
 }
 
 export const TabNavigation: React.FC<TabNavigationProps> = ({
@@ -44,6 +45,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
   isAdminMode,
   isAgenMode,
   licensedCount = 0,
+  hasPendingNotice = false,
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -213,6 +215,10 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
                   >
                     {tab.badge}
                   </span>
+                )}
+
+                {tab.id === 'pangkalan' && hasPendingNotice && (
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-500 border border-white shrink-0" title="Ada data baru belum disimpan ke Google Sheet" />
                 )}
               </button>
             );

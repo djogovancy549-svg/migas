@@ -210,8 +210,18 @@ export default function App() {
   const [isRekomendasiModalOpen, setIsRekomendasiModalOpen] = useState<boolean>(false);
   const [rekomendasiTargetPangkalan, setRekomendasiTargetPangkalan] = useState<Pangkalan | null>(null);
 
-  // Unsynced data notice for Admin
-  const [pendingUnsyncedNotice, setPendingUnsyncedNotice] = useState<string | null>(null);
+  // Unsynced data notice for Admin & Users
+  const [pendingUnsyncedNotice, setPendingUnsyncedNotice] = useState<string | null>(() => {
+    return safeLocalStorage.getItem('pne_nagekeo_pending_unsynced_notice') || null;
+  });
+
+  useEffect(() => {
+    if (pendingUnsyncedNotice) {
+      safeLocalStorage.setItem('pne_nagekeo_pending_unsynced_notice', pendingUnsyncedNotice);
+    } else {
+      safeLocalStorage.removeItem('pne_nagekeo_pending_unsynced_notice');
+    }
+  }, [pendingUnsyncedNotice]);
 
   // Google Auth Listener to auto-grant Admin mode ONLY if user's email matches authorizedAdminEmails
   useEffect(() => {
@@ -397,6 +407,9 @@ export default function App() {
 
   const handleDeletePangkalan = (id: string) => {
     setPangkalanList((prev) => prev.filter((p) => p.id !== id));
+    setPendingUnsyncedNotice(
+      `Pangkalan (${id}) telah dihapus! Mohon tekan tombol 'Simpan ke Google Sheet' di Google Sync Bar agar data Cloud Google Sheet Admin diperbarui.`
+    );
   };
 
   const handleUpdateChecklist = (pangkalanId: string, updated: PersyaratanStatus) => {
@@ -404,6 +417,9 @@ export default function App() {
       ...prev,
       [pangkalanId]: updated,
     }));
+    setPendingUnsyncedNotice(
+      `Verifikasi checklist persyaratan pangkalan (${pangkalanId}) telah diperbarui! Mohon tekan 'Simpan ke Google Sheet' di Google Sync Bar.`
+    );
   };
 
   const handleQuickPrintSummary = () => {
@@ -453,6 +469,9 @@ export default function App() {
       ...prev,
       [pangkalanId]: newRekomendasi,
     }));
+    setPendingUnsyncedNotice(
+      `Surat Rekomendasi pangkalan (${pangkalanId}) telah diterbitkan! Mohon tekan 'Simpan ke Google Sheet' di Google Sync Bar.`
+    );
   };
 
   const handleUploadFile = (pangkalanId: string, docKey: string, docName: string, file: File) => {
@@ -503,6 +522,10 @@ export default function App() {
           },
         };
       });
+
+      setPendingUnsyncedNotice(
+        `Dokumen '${docName}' untuk pangkalan (${pangkalanId}) baru diunggah! Mohon tekan 'Simpan ke Google Sheet' & 'Simpan ke Google Drive' di Google Sync Bar.`
+      );
     };
     reader.readAsDataURL(file);
   };
@@ -604,6 +627,7 @@ export default function App() {
         totalKecamatan={totalKecamatan}
         isAdminMode={isAdminMode}
         isAgenMode={isAgenMode}
+        pendingUnsyncedNotice={pendingUnsyncedNotice}
         onRequestAdminAuth={() => setAuthModalState({ isOpen: true, targetRole: 'admin' })}
         onRequestAgenAuth={() => setAuthModalState({ isOpen: true, targetRole: 'agen' })}
         onExitAdminMode={() => setIsAdminMode(false)}
@@ -620,6 +644,7 @@ export default function App() {
         isAdminMode={isAdminMode}
         isAgenMode={isAgenMode}
         licensedCount={licensedPangkalanCount}
+        hasPendingNotice={!!pendingUnsyncedNotice}
       />
 
       {/* Main Content Body */}
