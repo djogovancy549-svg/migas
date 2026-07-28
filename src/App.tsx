@@ -567,6 +567,7 @@ export default function App() {
           <GoogleSyncBar
             pangkalanList={pangkalanList}
             uploadedDocs={uploadedDocs}
+            isAdminMode={isAdminMode}
             onClearDummyData={handleClearDummyData}
           />
         </div>

@@ -312,7 +312,7 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
       setIsSyncingSheets(true);
       setNotification(null);
 
-      const res = await exportToGoogleSheets(googleAccessToken, pangkalanList, sheetId || undefined);
+      const res = await exportToGoogleSheets(googleAccessToken, pangkalanList, sheetId || undefined, true);
 
       if (res.spreadsheetId) {
         setSheetId(res.spreadsheetId);
@@ -335,7 +335,7 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
         type: 'error',
         message: err.message || 'Gagal menyimpan ke Google Sheet Admin Pusat.',
       });
-    } fontFinally: {
+    } finally {
       setIsSyncingSheets(false);
     }
   };

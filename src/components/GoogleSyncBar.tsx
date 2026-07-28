@@ -18,12 +18,14 @@ import { safeLocalStorage } from '../lib/storage';
 interface GoogleSyncBarProps {
   pangkalanList: Pangkalan[];
   uploadedDocs: UploadedDocument[];
+  isAdminMode?: boolean;
   onClearDummyData: () => void;
 }
 
 export const GoogleSyncBar: React.FC<GoogleSyncBarProps> = ({
   pangkalanList,
   uploadedDocs,
+  isAdminMode = false,
   onClearDummyData,
 }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -38,6 +40,21 @@ export const GoogleSyncBar: React.FC<GoogleSyncBarProps> = ({
   const [sheetId, setSheetId] = useState<string | null>(() => {
     return safeLocalStorage.getItem('pne_nagekeo_google_sheet_id');
   });
+
+  // Keep sheetId/sheetUrl updated in real-time if changed in Admin settings
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setSheetId(safeLocalStorage.getItem('pne_nagekeo_google_sheet_id'));
+      setSheetUrl(safeLocalStorage.getItem('pne_nagekeo_google_sheet_url'));
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    const interval = setInterval(handleStorageChange, 2000);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, []);
 
   const [notification, setNotification] = useState<{
     type: 'success' | 'error' | 'info';
@@ -105,7 +122,8 @@ export const GoogleSyncBar: React.FC<GoogleSyncBarProps> = ({
       setIsSyncingSheets(true);
       setNotification(null);
 
-      const result = await exportToGoogleSheets(accessToken, pangkalanList, sheetId || undefined);
+      // Pass existing sheetId or require admin permission to create new sheet
+      const result = await exportToGoogleSheets(accessToken, pangkalanList, sheetId || undefined, isAdminMode);
       setSheetId(result.spreadsheetId);
       setSheetUrl(result.spreadsheetUrl);
       safeLocalStorage.setItem('pne_nagekeo_google_sheet_id', result.spreadsheetId);
@@ -113,12 +131,12 @@ export const GoogleSyncBar: React.FC<GoogleSyncBarProps> = ({
 
       setNotification({
         type: 'success',
-        message: `Data ${pangkalanList.length} pangkalan berhasil disimpan ke Google Sheets!`,
+        message: `Data ${pangkalanList.length} pangkalan berhasil tersimpan ke Google Sheet Admin Pusat!`,
       });
     } catch (err: any) {
       setNotification({
         type: 'error',
-        message: err.message || 'Gagal sync data ke Google Sheets.',
+        message: err.message || 'Gagal sync data ke Google Sheets Admin.',
       });
     } finally {
       setIsSyncingSheets(false);
@@ -295,22 +313,39 @@ export const GoogleSyncBar: React.FC<GoogleSyncBarProps> = ({
         </button>
       </div>
 
-      {/* Active Spreadsheet Link if generated */}
-      {sheetUrl && (
-        <div className="flex items-center justify-between bg-emerald-950/50 border border-emerald-800/60 p-2.5 rounded-xl text-xs text-emerald-300">
+      {/* Active Central Admin Spreadsheet Banner */}
+      {sheetUrl ? (
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-emerald-950/60 border border-emerald-800/70 p-3 rounded-xl text-xs text-emerald-300">
           <div className="flex items-center gap-2 truncate">
             <FileSpreadsheet className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span className="truncate font-semibold">Google Spreadsheet Tersambung</span>
+            <div className="truncate">
+              <span className="font-bold text-white block truncate">Google Sheet Admin Pusat Terhubung</span>
+              <span className="text-[10px] text-emerald-300/80 font-mono block truncate">
+                ID: {sheetId} • Semua data pangkalan tersimpan ke Sheet Admin ini
+              </span>
+            </div>
           </div>
           <a
             href={sheetUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 px-3 py-1 rounded-lg text-[11px] font-bold border border-emerald-500/40 shrink-0"
+            className="inline-flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-3 py-1.5 rounded-lg text-[11px] font-extrabold transition shrink-0 self-end sm:self-auto shadow"
           >
-            <span>Buka Google Sheets</span>
-            <ExternalLink className="w-3 h-3" />
+            <span>Buka Google Sheet Admin</span>
+            <ExternalLink className="w-3.5 h-3.5" />
           </a>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between bg-amber-950/40 border border-amber-800/50 p-3 rounded-xl text-xs text-amber-300">
+          <div className="flex items-center gap-2">
+            <FileSpreadsheet className="w-4 h-4 text-amber-400 shrink-0" />
+            <div>
+              <span className="font-bold text-amber-200 block">Belum Ada Tautan Google Sheet Admin Pusat</span>
+              <span className="text-[11px] text-amber-300/80 block">
+                Tautan Google Sheet disinkronkan 1x oleh Admin di Pengaturan Admin dan berlaku terpusat untuk semua pengguna.
+              </span>
+            </div>
+          </div>
         </div>
       )}
 

@@ -6,13 +6,20 @@ import { Pangkalan, UploadedDocument } from '../types';
 export async function exportToGoogleSheets(
   accessToken: string,
   pangkalanList: Pangkalan[],
-  existingSheetId?: string
+  existingSheetId?: string,
+  allowCreateNewIfMissing: boolean = false
 ): Promise<{ spreadsheetId: string; spreadsheetUrl: string }> {
   try {
     let spreadsheetId = existingSheetId;
 
-    // 1. If no sheet ID, create new Google Spreadsheet
+    // 1. If no sheet ID, check if allowed to create new (Admin only)
     if (!spreadsheetId) {
+      if (!allowCreateNewIfMissing) {
+        throw new Error(
+          'Google Sheet Admin Pusat belum terhubung. Konfigurasi awal Google Sheet Admin hanya dapat dilakukan oleh Admin di menu Pengaturan Admin.'
+        );
+      }
+
       const createRes = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
         method: 'POST',
         headers: {
@@ -21,14 +28,14 @@ export async function exportToGoogleSheets(
         },
         body: JSON.stringify({
           properties: {
-            title: `Data Pangkalan Minyak Tanah PT PNE Nagekeo (${new Date().toLocaleDateString('id-ID')})`,
+            title: `Data Pangkalan Minyak Tanah PT PNE Nagekeo - Admin Pusat (${new Date().toLocaleDateString('id-ID')})`,
           },
         }),
       });
 
       if (!createRes.ok) {
         const errJson = await createRes.json();
-        throw new Error(errJson.error?.message || 'Gagal membuat Google Spreadsheet baru');
+        throw new Error(errJson.error?.message || 'Gagal membuat Google Spreadsheet Admin Pusat baru');
       }
 
       const createData = await createRes.json();
