@@ -3,6 +3,7 @@ import { Pangkalan, PersyaratanStatus, MasterRequirementItem, UploadedDocument }
 import { INITIAL_PANGKALAN_LIST, INITIAL_CHECKLIST_STATUS } from './data/pangkalanData';
 import { INITIAL_MASTER_REQUIREMENTS } from './data/masterRequirements';
 import { safeLocalStorage } from './lib/storage';
+import { initAuthListener } from './lib/googleAuth';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Header } from './components/Header';
 import { TabNavigation, TabType } from './components/TabNavigation';
@@ -12,11 +13,30 @@ import { PangkalanTableView } from './components/PangkalanTableView';
 import { SuratPermohonanView } from './components/SuratPermohonanView';
 import { SuratPernyataanView } from './components/SuratPernyataanView';
 import { PersyaratanChecklistView } from './components/PersyaratanChecklistView';
+import { AdminSettingsView } from './components/AdminSettingsView';
 import { PangkalanModal } from './components/PangkalanModal';
 import { AdminPinModal } from './components/AdminPinModal';
 import { UploadPersyaratanModal } from './components/UploadPersyaratanModal';
 
 export default function App() {
+  // Authorized Admin Emails list state
+  const [authorizedAdminEmails, setAuthorizedAdminEmails] = useState<string[]>(() => {
+    const saved = safeLocalStorage.getItem('pne_nagekeo_admin_emails');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {
+        console.error('Failed to parse saved admin emails', e);
+      }
+    }
+    return ['djogovancy549@gmail.com', 'admin.perekonomian@nagekeokab.go.id'];
+  });
+
+  // Current Google User and Access Token state
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
+  const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null);
+
   // Load initial dataset or restore from safeLocalStorage
   const [pangkalanList, setPangkalanList] = useState<Pangkalan[]>(() => {
     const saved = safeLocalStorage.getItem('pne_nagekeo_pangkalan_data');
@@ -72,7 +92,7 @@ export default function App() {
     return [];
   });
 
-  // Admin Mode state (protected by PIN migas2026)
+  // Admin Mode state (protected by PIN migas2026 OR Google Auth Email match)
   const [isAdminMode, setIsAdminMode] = useState<boolean>(() => {
     return safeLocalStorage.getItem('pne_nagekeo_is_admin') === 'true';
   });
@@ -81,6 +101,26 @@ export default function App() {
   // File Upload Modal State
   const [isUploadModalOpen, setIsUploadModalOpen] = useState<boolean>(false);
   const [uploadTargetPangkalan, setUploadTargetPangkalan] = useState<Pangkalan | null>(null);
+
+  // Google Auth Listener to auto-grant Admin mode if user's email matches authorizedAdminEmails
+  useEffect(() => {
+    const unsubscribe = initAuthListener(
+      (user, token) => {
+        const email = user.email ? user.email.toLowerCase() : null;
+        setCurrentUserEmail(email);
+        setGoogleAccessToken(token);
+
+        if (email && authorizedAdminEmails.map((e) => e.toLowerCase()).includes(email)) {
+          setIsAdminMode(true);
+        }
+      },
+      () => {
+        setCurrentUserEmail(null);
+        setGoogleAccessToken(null);
+      }
+    );
+    return () => unsubscribe();
+  }, [authorizedAdminEmails]);
 
   // Save changes to safeLocalStorage
   useEffect(() => {
@@ -103,8 +143,19 @@ export default function App() {
     safeLocalStorage.setItem('pne_nagekeo_is_admin', isAdminMode ? 'true' : 'false');
   }, [isAdminMode]);
 
+  useEffect(() => {
+    safeLocalStorage.setItem('pne_nagekeo_admin_emails', JSON.stringify(authorizedAdminEmails));
+  }, [authorizedAdminEmails]);
+
   // Tab State
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
+
+  // Guard: If non-admin tries to visit admin-only tab, redirect to dashboard
+  useEffect(() => {
+    if (!isAdminMode && (activeTab === 'pangkalan' || activeTab === 'admin-settings')) {
+      setActiveTab('dashboard');
+    }
+  }, [isAdminMode, activeTab]);
 
   // Selected Pangkalan for Document Generation
   const [selectedPangkalanForLetter, setSelectedPangkalanForLetter] = useState<Pangkalan | null>(null);
@@ -279,10 +330,11 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         pangkalanCount={pangkalanList.length}
+        isAdminMode={isAdminMode}
       />
 
       {/* Main Content Body */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-6 space-y-4">
         {/* Google Sync & Drive Bar */}
         <div className="print:hidden">
           <GoogleSyncBar
@@ -292,7 +344,7 @@ export default function App() {
           />
         </div>
 
-        <ErrorBoundary fallbackTitle="Kendala Memuat Menu Ceklist Persyaratan">
+        <ErrorBoundary fallbackTitle="Kendala Memuat Menu Aplikasi">
           {activeTab === 'dashboard' && (
             <DashboardView
               pangkalanList={pangkalanList}
@@ -301,7 +353,7 @@ export default function App() {
             />
           )}
 
-          {activeTab === 'pangkalan' && (
+          {activeTab === 'pangkalan' && isAdminMode && (
             <PangkalanTableView
               pangkalanList={pangkalanList}
               uploadedDocsCountMap={uploadedDocsCountMap}
@@ -345,6 +397,21 @@ export default function App() {
               onDeleteMasterRequirement={handleDeleteMasterRequirement}
             />
           )}
+
+          {activeTab === 'admin-settings' && isAdminMode && (
+            <AdminSettingsView
+              pangkalanList={pangkalanList}
+              uploadedDocs={uploadedDocs}
+              isAdminMode={isAdminMode}
+              authorizedAdminEmails={authorizedAdminEmails}
+              currentUserEmail={currentUserEmail}
+              googleAccessToken={googleAccessToken}
+              onUpdateAuthorizedEmails={(updated) => setAuthorizedAdminEmails(updated)}
+              onRequestAdminAuth={() => setIsAdminPinModalOpen(true)}
+              onExitAdminMode={() => setIsAdminMode(false)}
+              onClearData={handleClearDummyData}
+            />
+          )}
         </ErrorBoundary>
       </main>
 
@@ -352,10 +419,10 @@ export default function App() {
       <footer className="bg-slate-900 text-slate-400 py-6 border-t border-slate-800 text-center text-xs print:hidden">
         <div className="max-w-7xl mx-auto px-4 space-y-1">
           <p className="font-bold text-slate-300">
-            Aplikasi Sistem Pangkalan Minyak Tanah PT. Putra Ngada Energi (Nagekeo)
+            Sistem Informasi & Rekomendasi Pangkalan Minyak Tanah Subsidi Kabupaten Nagekeo
           </p>
           <p className="text-slate-500">
-            Terintegrasi dengan Persyaratan Bagian Perekonomian dan SDA Sekretariat Daerah Kabupaten Nagekeo, NTT
+            Bagian Perekonomian dan SDA Setda Kabupaten Nagekeo, NTT • Agen PT. Putra Ngada Energi
           </p>
         </div>
       </footer>
