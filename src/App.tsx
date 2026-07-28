@@ -196,7 +196,7 @@ export default function App() {
   const [isRekomendasiModalOpen, setIsRekomendasiModalOpen] = useState<boolean>(false);
   const [rekomendasiTargetPangkalan, setRekomendasiTargetPangkalan] = useState<Pangkalan | null>(null);
 
-  // Google Auth Listener to auto-grant Admin mode if user's email matches authorizedAdminEmails
+  // Google Auth Listener to auto-grant Admin mode ONLY if user's email matches authorizedAdminEmails
   useEffect(() => {
     const unsubscribe = initAuthListener(
       (user, token) => {
@@ -206,6 +206,9 @@ export default function App() {
 
         if (email && authorizedAdminEmails.map((e) => e.toLowerCase()).includes(email)) {
           setIsAdminMode(true);
+        } else {
+          // Regular user/customer accounts must explicitly remain as non-admin
+          setIsAdminMode(false);
         }
       },
       () => {
@@ -482,6 +485,10 @@ export default function App() {
           isAgenMode={isAgenMode}
           currentUserEmail={currentUserEmail}
           onEnterAsCustomer={() => {
+            const isAuthAdmin = currentUserEmail && authorizedAdminEmails.map((e) => e.toLowerCase()).includes(currentUserEmail.toLowerCase());
+            if (!isAuthAdmin) {
+              setIsAdminMode(false);
+            }
             setIsLauncherActive(false);
             setActiveTab('dashboard');
           }}
