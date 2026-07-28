@@ -292,7 +292,7 @@ export const GoogleSyncBar: React.FC<GoogleSyncBarProps> = ({
 
       {/* Unsynced Data Alert Banner */}
       {pendingUnsyncedNotice && (
-        <div className="bg-amber-500/20 border-2 border-amber-500/80 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-amber-200 text-xs animate-pulse">
+        <div className="bg-amber-500/15 border-2 border-amber-500 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-amber-200 text-xs shadow-lg">
           <div className="flex items-center gap-2.5">
             <BellRing className="w-5 h-5 text-amber-400 shrink-0" />
             <div>
@@ -303,7 +303,7 @@ export const GoogleSyncBar: React.FC<GoogleSyncBarProps> = ({
           <button
             onClick={handleSyncSheets}
             disabled={isSyncingSheets}
-            className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-3.5 py-1.5 rounded-lg text-xs shadow-md transition shrink-0 cursor-pointer"
+            className="bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-slate-950 font-black px-3.5 py-1.5 rounded-lg text-xs shadow-md transition shrink-0 cursor-pointer touch-manipulation"
           >
             Tekan Simpan Sekarang
           </button>
@@ -316,9 +316,9 @@ export const GoogleSyncBar: React.FC<GoogleSyncBarProps> = ({
         <button
           onClick={handleSyncSheets}
           disabled={isSyncingSheets}
-          className={`inline-flex items-center justify-center gap-2 font-bold px-4 py-2.5 rounded-xl text-xs transition shadow cursor-pointer min-h-[44px] ${
+          className={`inline-flex items-center justify-center gap-2 font-bold px-4 py-2.5 rounded-xl text-xs transition shadow cursor-pointer min-h-[44px] touch-manipulation ${
             pendingUnsyncedNotice
-              ? 'bg-gradient-to-r from-amber-500 to-emerald-600 hover:from-amber-400 hover:to-emerald-500 text-slate-950 font-black ring-4 ring-amber-400/50 animate-pulse'
+              ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-black ring-2 ring-amber-300'
               : 'bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 text-white'
           }`}
         >

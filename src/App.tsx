@@ -259,7 +259,11 @@ export default function App() {
                 mergedMap.set(key, existing ? { ...existing, ...item } : item);
               }
             });
-            return Array.from(mergedMap.values()).map((p, idx) => ({ ...p, no: idx + 1 }));
+            const updated = Array.from(mergedMap.values()).map((p, idx) => ({ ...p, no: idx + 1 }));
+            if (JSON.stringify(prev) === JSON.stringify(updated)) {
+              return prev;
+            }
+            return updated;
           });
         }
       })
@@ -622,7 +626,7 @@ export default function App() {
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-6 space-y-4">
         {/* Unsynced Data Alert Banner at Top */}
         {pendingUnsyncedNotice && (
-          <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 p-4 rounded-2xl shadow-xl text-slate-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-2 border-amber-300 print:hidden animate-pulse">
+          <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 p-4 rounded-2xl shadow-xl text-slate-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-2 border-amber-300 print:hidden">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-slate-950/15 rounded-xl">
                 <BellRing className="w-6 h-6 text-slate-950" />
@@ -642,14 +646,14 @@ export default function App() {
                   const syncElem = document.getElementById('google-sync-bar');
                   if (syncElem) syncElem.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className="bg-slate-950 hover:bg-slate-900 text-amber-400 font-black px-4 py-2 rounded-xl text-xs shadow transition cursor-pointer flex items-center gap-1.5"
+                className="bg-slate-950 hover:bg-slate-900 active:bg-slate-800 text-amber-400 font-black px-4 py-2 rounded-xl text-xs shadow transition cursor-pointer flex items-center gap-1.5 touch-manipulation"
               >
                 <FileSpreadsheet className="w-4 h-4 text-amber-400" />
                 <span>Tekan Simpan ke Google Sheet</span>
               </button>
               <button
                 onClick={() => setPendingUnsyncedNotice(null)}
-                className="p-1.5 hover:bg-slate-950/20 text-slate-950 rounded-lg transition"
+                className="p-1.5 hover:bg-slate-950/20 text-slate-950 rounded-lg transition cursor-pointer touch-manipulation"
                 title="Tutup"
               >
                 <X className="w-4 h-4" />

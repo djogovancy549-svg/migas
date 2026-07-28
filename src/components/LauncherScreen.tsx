@@ -42,9 +42,9 @@ export const LauncherScreen: React.FC<LauncherScreenProps> = ({
 }) => {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between p-4 sm:p-6 lg:p-8 relative overflow-hidden selection:bg-amber-500 selection:text-slate-950">
-      {/* Background Ambient Glows */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-amber-500/10 blur-[120px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-0 right-0 w-[400px] h-[300px] bg-blue-600/10 blur-[100px] rounded-full pointer-events-none" />
+      {/* Background Ambient Glows - Optimized for Mobile GPUs */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[350px] sm:w-[600px] h-[200px] sm:h-[300px] bg-amber-500/10 blur-3xl rounded-full pointer-events-none opacity-40" />
+      <div className="absolute bottom-0 right-0 w-[250px] sm:w-[400px] h-[200px] sm:h-[300px] bg-blue-600/10 blur-3xl rounded-full pointer-events-none opacity-30" />
 
       {/* Top Header Bar */}
       <header className="max-w-6xl w-full mx-auto flex items-center justify-between py-2 z-10">
@@ -76,7 +76,7 @@ export const LauncherScreen: React.FC<LauncherScreenProps> = ({
             </span>
           ) : (
             <span className="text-xs font-semibold px-3 py-1 rounded-full bg-slate-900 text-slate-400 border border-slate-800 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+              <span className="w-2 h-2 rounded-full bg-amber-400"></span>
               <span>Portal Terbuka</span>
             </span>
           )}
