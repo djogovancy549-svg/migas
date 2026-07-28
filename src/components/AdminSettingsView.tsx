@@ -25,7 +25,7 @@ import {
   Phone,
   MapPin
 } from 'lucide-react';
-import { Pangkalan, UploadedDocument, AgenCompany } from '../types';
+import { Pangkalan, UploadedDocument, AgenCompany, HetKecamatan } from '../types';
 import { safeLocalStorage } from '../lib/storage';
 import { exportToGoogleSheets, uploadFileToGoogleDrive } from '../lib/googleDriveSheetsService';
 
@@ -41,9 +41,11 @@ interface AdminSettingsViewProps {
   pimpinanNip: string;
   pimpinanJabatan: string;
   agenList: AgenCompany[];
+  hetList: HetKecamatan[];
   onUpdateAuthorizedEmails: (emails: string[]) => void;
   onUpdatePimpinanInfo: (info: { pin: string; nama: string; nip: string; jabatan: string }) => void;
   onUpdateAgenList: (agenList: AgenCompany[]) => void;
+  onUpdateHetList: (hetList: HetKecamatan[]) => void;
   onRequestAdminAuth: () => void;
   onExitAdminMode: () => void;
   onClearData: () => void;
@@ -61,9 +63,11 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
   pimpinanNip,
   pimpinanJabatan,
   agenList = [],
+  hetList = [],
   onUpdateAuthorizedEmails,
   onUpdatePimpinanInfo,
   onUpdateAgenList,
+  onUpdateHetList,
   onRequestAdminAuth,
   onExitAdminMode,
   onClearData,
@@ -71,6 +75,14 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
   const [newEmailInput, setNewEmailInput] = useState('');
   const [customSheetInput, setCustomSheetInput] = useState('');
   const [isEditingSheetId, setIsEditingSheetId] = useState(false);
+
+  // HET management state
+  const [isAddingHet, setIsAddingHet] = useState(false);
+  const [newKecamatan, setNewKecamatan] = useState('');
+  const [newHargaHet, setNewHargaHet] = useState<number>(4660);
+  const [newSkBupati, setNewSkBupati] = useState('236/KEP/HK/2018');
+  const [editingKecamatan, setEditingKecamatan] = useState<string | null>(null);
+  const [editHargaHet, setEditHargaHet] = useState<number>(0);
 
   // Leader Pimpinan Pin edit form - HIDDEN BY DEFAULT
   const [showPimpinanPin, setShowPimpinanPin] = useState(false);
@@ -174,6 +186,65 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
       setNotification({
         type: 'success',
         message: `Agen "${agenNama}" berhasil dihapus.`,
+      });
+    }
+  };
+
+  // Add new HET Kecamatan
+  const handleAddHet = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newKecamatan.trim()) return;
+
+    if (hetList.some((h) => h.kecamatan.toLowerCase().trim() === newKecamatan.toLowerCase().trim())) {
+      setNotification({
+        type: 'error',
+        message: `Kecamatan ${newKecamatan} sudah memiliki daftar HET. Silakan edit HET yang ada.`,
+      });
+      return;
+    }
+
+    const updated = [
+      ...hetList,
+      {
+        kecamatan: newKecamatan.trim(),
+        hargaHetPerLiter: newHargaHet,
+        skBupatiNomor: newSkBupati.trim() || '236/KEP/HK/2018',
+      },
+    ];
+
+    onUpdateHetList(updated);
+    setIsAddingHet(false);
+    setNewKecamatan('');
+    setNewHargaHet(4660);
+    setNotification({
+      type: 'success',
+      message: `HET Kecamatan ${newKecamatan} (Rp ${newHargaHet.toLocaleString('id-ID')}/Liter) berhasil ditambahkan!`,
+    });
+  };
+
+  // Save Edit HET
+  const handleSaveEditHet = (kecamatanName: string) => {
+    const updated = hetList.map((h) =>
+      h.kecamatan.toLowerCase().trim() === kecamatanName.toLowerCase().trim()
+        ? { ...h, hargaHetPerLiter: editHargaHet }
+        : h
+    );
+    onUpdateHetList(updated);
+    setEditingKecamatan(null);
+    setNotification({
+      type: 'success',
+      message: `Harga HET Kecamatan ${kecamatanName} berhasil diperbarui menjadi Rp ${editHargaHet.toLocaleString('id-ID')}/Liter!`,
+    });
+  };
+
+  // Delete HET
+  const handleDeleteHet = (kecamatanName: string) => {
+    if (window.confirm(`Apakah Anda yakin ingin menghapus tarif HET untuk Kecamatan ${kecamatanName}?`)) {
+      const updated = hetList.filter((h) => h.kecamatan.toLowerCase().trim() !== kecamatanName.toLowerCase().trim());
+      onUpdateHetList(updated);
+      setNotification({
+        type: 'success',
+        message: `Tarif HET Kecamatan ${kecamatanName} dihapus.`,
       });
     }
   };
@@ -554,6 +625,158 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Panel Daftar Harga Eceran Tertinggi (HET) per Kecamatan */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2.5 bg-emerald-500/20 text-emerald-400 rounded-xl border border-emerald-500/30">
+              <FileSpreadsheet className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-white">Kelola Daftar Harga Eceran Tertinggi (HET) per Kecamatan</h3>
+              <p className="text-[11px] text-slate-400">
+                Atur tarif resmi HET per kecamatan untuk Surat Rekomendasi & Surat Pernyataan (Sesuai SK Bupati Nagekeo)
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setIsAddingHet(!isAddingHet)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-xs transition cursor-pointer self-start sm:self-auto"
+          >
+            <Plus className="w-4 h-4" />
+            <span>{isAddingHet ? 'Batal Tambah' : 'Tambah HET Kecamatan'}</span>
+          </button>
+        </div>
+
+        {/* Add HET Form */}
+        {isAddingHet && (
+          <form onSubmit={handleAddHet} className="p-4 bg-slate-950 rounded-xl border border-slate-800 space-y-3">
+            <h4 className="text-xs font-bold text-emerald-300">Tambah Tarif HET Kecamatan Baru:</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="text-[11px] font-semibold text-slate-400 block mb-1">Nama Kecamatan *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Contoh: Aesesa"
+                  value={newKecamatan}
+                  onChange={(e) => setNewKecamatan(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-semibold text-slate-400 block mb-1">Harga HET per Liter (Rp) *</label>
+                <input
+                  type="number"
+                  required
+                  placeholder="4660"
+                  value={newHargaHet}
+                  onChange={(e) => setNewHargaHet(Number(e.target.value))}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-emerald-400 focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-semibold text-slate-400 block mb-1">Nomor SK Bupati Nagekeo</label>
+                <input
+                  type="text"
+                  placeholder="236/KEP/HK/2018"
+                  value={newSkBupati}
+                  onChange={(e) => setNewSkBupati(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsAddingHet(false)}
+                className="px-3 py-1.5 text-xs text-slate-400 hover:text-white"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-xs transition"
+              >
+                Simpan HET Kecamatan
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* HET Table / Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {hetList.map((h) => (
+            <div
+              key={h.kecamatan}
+              className="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col justify-between gap-2"
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-white text-sm">Kec. {h.kecamatan}</span>
+                <span className="text-[10px] font-mono bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 px-2 py-0.5 rounded">
+                  SK: {h.skBupatiNomor || '236/KEP/HK/2018'}
+                </span>
+              </div>
+
+              {editingKecamatan === h.kecamatan ? (
+                <div className="flex items-center gap-2 mt-1">
+                  <input
+                    type="number"
+                    value={editHargaHet}
+                    onChange={(e) => setEditHargaHet(Number(e.target.value))}
+                    className="w-full bg-slate-900 border border-emerald-500 rounded-lg px-2 py-1 text-xs text-emerald-300 font-bold"
+                  />
+                  <button
+                    onClick={() => handleSaveEditHet(h.kecamatan)}
+                    className="px-2.5 py-1 bg-emerald-500 text-slate-950 font-bold text-xs rounded-lg hover:bg-emerald-400"
+                  >
+                    Simpan
+                  </button>
+                  <button
+                    onClick={() => setEditingKecamatan(null)}
+                    className="px-2 py-1 text-slate-400 text-xs hover:text-white"
+                  >
+                    Batal
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-base font-black text-amber-400">
+                    Rp {h.hargaHetPerLiter.toLocaleString('id-ID')} / Liter
+                  </span>
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => {
+                        setEditingKecamatan(h.kecamatan);
+                        setEditHargaHet(h.hargaHetPerLiter);
+                      }}
+                      className="p-1.5 text-slate-400 hover:text-amber-300 hover:bg-slate-800 rounded-lg transition"
+                      title="Edit Harga HET"
+                    >
+                      <Edit className="w-3.5 h-3.5" />
+                    </button>
+                    {hetList.length > 1 && (
+                      <button
+                        onClick={() => handleDeleteHet(h.kecamatan)}
+                        className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition"
+                        title="Hapus HET Kecamatan"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
           ))}

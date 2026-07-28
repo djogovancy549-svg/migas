@@ -1,7 +1,17 @@
-import { Pangkalan, PersyaratanStatus, AgenCompany } from '../types';
+import { Pangkalan, PersyaratanStatus, AgenCompany, HetKecamatan } from '../types';
 
 // Default initial pangkalan list is clean/empty as requested by user
 export const INITIAL_PANGKALAN_LIST: Pangkalan[] = [];
+
+export const INITIAL_HET_LIST: HetKecamatan[] = [
+  { kecamatan: 'Aesesa', hargaHetPerLiter: 4660, skBupatiNomor: '236/KEP/HK/2018' },
+  { kecamatan: 'Boawae', hargaHetPerLiter: 4675, skBupatiNomor: '236/KEP/HK/2018' },
+  { kecamatan: 'Mauponggo', hargaHetPerLiter: 5095, skBupatiNomor: '236/KEP/HK/2018' },
+  { kecamatan: 'Aesesa Selatan', hargaHetPerLiter: 4800, skBupatiNomor: '236/KEP/HK/2018' },
+  { kecamatan: 'Wolowae', hargaHetPerLiter: 4700, skBupatiNomor: '236/KEP/HK/2018' },
+  { kecamatan: 'Nangaroro', hargaHetPerLiter: 4850, skBupatiNomor: '236/KEP/HK/2018' },
+  { kecamatan: 'Keo Tengah', hargaHetPerLiter: 5100, skBupatiNomor: '236/KEP/HK/2018' },
+];
 
 export const INITIAL_AGEN_LIST: AgenCompany[] = [
   {

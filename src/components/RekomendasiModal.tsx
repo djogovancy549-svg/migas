@@ -18,7 +18,7 @@ import {
   Clock
 } from 'lucide-react';
 import QRCode from 'qrcode';
-import { Pangkalan, RekomendasiPerizinan } from '../types';
+import { Pangkalan, RekomendasiPerizinan, HetKecamatan } from '../types';
 import { PEMDA_INFO, AGEN_INFO } from '../data/pangkalanData';
 
 interface RekomendasiModalProps {
@@ -30,6 +30,7 @@ interface RekomendasiModalProps {
   pimpinanNama: string;
   pimpinanNip: string;
   pimpinanJabatan: string;
+  hetList?: HetKecamatan[];
   isAdminMode: boolean;
   onClose: () => void;
   onApproveAndSign: (pangkalanId: string, customRekomendasiNo?: string) => void;
@@ -45,6 +46,7 @@ export const RekomendasiModal: React.FC<RekomendasiModalProps> = ({
   pimpinanNama,
   pimpinanNip,
   pimpinanJabatan,
+  hetList = [],
   isAdminMode,
   onClose,
   onApproveAndSign,
@@ -56,10 +58,17 @@ export const RekomendasiModal: React.FC<RekomendasiModalProps> = ({
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null);
   const [nomorRekInput, setNomorRekInput] = useState('');
 
-  // Default recommendation number calculation
+  // Find matching HET for pangkalan kecamatan
+  const matchingHet = hetList.find(
+    (h) => h.kecamatan.toLowerCase().trim() === (pangkalan?.kecamatan || '').toLowerCase().trim()
+  );
+  const hargaHet = matchingHet ? matchingHet.hargaHetPerLiter : 4660;
+  const skBupatiNo = matchingHet?.skBupatiNomor || '236/KEP/HK/2018';
+
+  // Default recommendation number calculation matching official format e.g. 500.10.8.1/EK.NGK/89/05/2026
   const defaultNomorRekomendasi = pangkalan
-    ? `500/EKON/REK-MIGAS/${pangkalan.id.replace(/[^a-zA-Z0-9]/g, '') || '001'}/2026`
-    : '500/EKON/REK-MIGAS/001/2026';
+    ? `500.10.8.1/EK.NGK/${pangkalan.no || '89'}/05/2026`
+    : '500.10.8.1/EK.NGK/89/05/2026';
 
   const currentStatus = existingRekomendasi?.status || (isRequirementsComplete ? 'Menunggu Tanda Tangan Pimpinan' : 'Draft');
 
@@ -306,123 +315,198 @@ export const RekomendasiModal: React.FC<RekomendasiModalProps> = ({
         {/* Official Printable Recommendation Document Body */}
         <div className="p-6 sm:p-10 bg-white text-slate-900 overflow-y-auto flex-1 font-serif print:p-0 print:overflow-visible">
           {/* KOP SURAT OFFICIAL PEMDA NAGEKEO */}
-          <div className="border-b-4 border-double border-slate-950 pb-4 mb-6 text-center space-y-1 relative">
+          <div className="border-b-2 border-slate-900 pb-3 mb-5 text-center relative font-serif">
             <div className="flex items-center justify-center gap-4">
-              <div className="w-14 h-14 bg-amber-500/20 text-amber-700 border border-amber-600/30 rounded-xl flex items-center justify-center shrink-0 font-sans font-black text-xs">
-                NAGEKEO
+              <div className="w-16 h-16 rounded-full border-2 border-slate-900 flex items-center justify-center shrink-0 p-1 bg-amber-50/50">
+                <div className="text-center">
+                  <span className="block text-[10px] font-bold tracking-tighter text-slate-900 leading-tight">NAGEKEO</span>
+                  <span className="block text-[8px] font-mono font-bold text-amber-900">2007</span>
+                </div>
               </div>
               <div className="text-center">
-                <h3 className="text-base sm:text-lg font-bold uppercase tracking-wide font-sans text-slate-950">
+                <h3 className="text-base sm:text-lg font-bold uppercase tracking-wider text-slate-950 leading-snug">
                   PEMERINTAH KABUPATEN NAGEKEO
                 </h3>
-                <h2 className="text-lg sm:text-2xl font-black uppercase tracking-wider font-sans text-slate-950">
+                <h2 className="text-lg sm:text-xl font-extrabold uppercase tracking-widest text-slate-950 leading-snug">
                   SEKRETARIAT DAERAH
                 </h2>
-                <p className="text-xs sm:text-sm font-bold uppercase font-sans text-slate-800">
-                  BAGIAN PEREKONOMIAN DAN SUMBER DAYA ALAM
+                <p className="text-xs sm:text-sm font-medium text-slate-800 italic">
+                  Jln. Mohammad Hatta No. Telp. (0411) 402150
                 </p>
-                <p className="text-[11px] font-sans text-slate-600 italic">
-                  Jl. Mawar No. 01 Mbay, Kabupaten Nagekeo, Nusa Tenggara Timur • Kode Pos 86472
+                <p className="text-sm sm:text-base font-bold uppercase tracking-widest text-slate-950 mt-0.5">
+                  M B A Y
                 </p>
               </div>
             </div>
           </div>
 
           {/* SURAT REKOMENDASI TITLE & NOMOR */}
-          <div className="text-center space-y-1 mb-6 font-sans">
-            <h4 className="text-base sm:text-xl font-black uppercase underline decoration-2 underline-offset-4 text-slate-950 tracking-wide">
-              SURAT REKOMENDASI PERIZINAN PANGKALAN MINYAK TANAH
+          <div className="text-center space-y-1 mb-5 font-serif">
+            <h4 className="text-base sm:text-lg font-extrabold uppercase underline decoration-1 underline-offset-4 text-slate-950 tracking-wide">
+              REKOMENDASI
             </h4>
-            <p className="text-xs sm:text-sm font-bold font-mono text-slate-800">
-              Nomor: {existingRekomendasi?.nomorRekomendasi || defaultNomorRekomendasi}
+            <p className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-900">
+              PENJUALAN BAHAN BAKAR MINYAK TANAH SUBSIDI
+            </p>
+            <p className="text-xs sm:text-sm font-semibold font-mono text-slate-900">
+              NOMOR : {existingRekomendasi?.nomorRekomendasi || defaultNomorRekomendasi}
             </p>
           </div>
 
-          {/* SURAT REKOMENDASI CONTENT */}
-          <div className="space-y-4 text-xs sm:text-sm leading-relaxed text-slate-900 font-sans">
-            <p>
-              Berdasarkan hasil verifikasi dan pemeriksaan berkas perizinan yang diselenggarakan oleh Bagian Perekonomian dan Sumber Daya Alam Sekretariat Daerah Kabupaten Nagekeo, dengan ini memberikan <strong>REKOMENDASI PERIZINAN PANGKALAN MINYAK TANAH BERSUBSIDI</strong> kepada:
-            </p>
-
-            {/* Identitas Pemohon & Pangkalan Table */}
-            <div className="bg-slate-50 border border-slate-300 rounded-xl p-4 space-y-2 font-sans my-3">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-1">
-                <span className="font-bold text-slate-700">Nama Pangkalan:</span>
-                <span className="sm:col-span-2 font-black text-slate-950">{pangkalan.nama}</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-1">
-                <span className="font-bold text-slate-700">Nama Pemilik / Usaha:</span>
-                <span className="sm:col-span-2 font-semibold text-slate-900">{pangkalan.namaUsaha || pangkalan.nama}</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-1">
-                <span className="font-bold text-slate-700">NIK / NIB Pemilik:</span>
-                <span className="sm:col-span-2 font-mono text-slate-900">{pangkalan.nik || '-'} / {pangkalan.nib || '-'}</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-1">
-                <span className="font-bold text-slate-700">Alamat Pangkalan:</span>
-                <span className="sm:col-span-2 text-slate-900">{pangkalan.alamat}, Kel. {pangkalan.kelurahan}, Kec. {pangkalan.kecamatan}, Kab. Nagekeo</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-1">
-                <span className="font-bold text-slate-700">Kuota Alokasi Minyak Tanah:</span>
-                <span className="sm:col-span-2 font-bold text-amber-700">
-                  {pangkalan.kuotaHarianLiter || 100} Liter / Hari ({pangkalan.kuotaBulananLiter || 3000} Liter / Bulan)
+          {/* DASAR HUKUM */}
+          <div className="space-y-1 text-xs sm:text-sm text-slate-900 leading-relaxed font-serif mb-4">
+            <p className="font-semibold">Dasar Hukum :</p>
+            <ol className="list-none space-y-1 pl-2 text-justify">
+              <li className="flex gap-2">
+                <span className="shrink-0">1.</span>
+                <span>Undang – Undang Nomor 22 Tahun 2001 tentang Minyak dan Gas Bumi;</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="shrink-0">2.</span>
+                <span>
+                  Peraturan Presiden Nomor 191 Tahun 2014 tentang Penyediaan, Pendistribusian dan Harga Jual Eceran Bahan Bakar Minyak sebagaimana telah diubah dengan Peraturan Presiden Nomor 117 Tahun 2021 tentang Perubahan Ketiga atas Peraturan Presiden Nomor 191 Tahun 2014 tentang Penyediaan Pendistribusian dan Harga Jual Eceran Bahan Bakar Minyak;
                 </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="shrink-0">3.</span>
+                <span>
+                  Surat Permohonan Rekomendasi dari Pemohon tanggal {pangkalan.tanggalLahir ? `${pangkalan.tanggalLahir}` : '18 Mei 2026'}.
+                </span>
+              </li>
+            </ol>
+          </div>
+
+          {/* DENGAN INI MEMBERIKAN REKOMENDASI... */}
+          <div className="space-y-2 text-xs sm:text-sm text-slate-900 leading-relaxed font-serif mb-4">
+            <p>Dengan ini memberikan Rekomendasi Penjualan Minyak Tanah Subsidi kepada :</p>
+            
+            <div className="pl-4 space-y-1 font-serif">
+              <div className="grid grid-cols-12 gap-1">
+                <span className="col-span-4 sm:col-span-3 font-semibold">Nama</span>
+                <span className="col-span-8 sm:col-span-9">: {pangkalan.namaUsaha || pangkalan.nama}</span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-1">
-                <span className="font-bold text-slate-700">Agen Penyalur Resmi:</span>
-                <span className="sm:col-span-2 font-semibold text-slate-900">{AGEN_INFO.nama}</span>
+              <div className="grid grid-cols-12 gap-1">
+                <span className="col-span-4 sm:col-span-3 font-semibold">Alamat</span>
+                <span className="col-span-8 sm:col-span-9">: {pangkalan.alamat}, Kel. {pangkalan.kelurahan}, Kecamatan {pangkalan.kecamatan}, Kabupaten Nagekeo</span>
+              </div>
+              <div className="grid grid-cols-12 gap-1">
+                <span className="col-span-4 sm:col-span-3 font-semibold">Nama Pangkalan</span>
+                <span className="col-span-8 sm:col-span-9">: {pangkalan.nama}</span>
+              </div>
+              <div className="grid grid-cols-12 gap-1">
+                <span className="col-span-4 sm:col-span-3 font-semibold">No HP</span>
+                <span className="col-span-8 sm:col-span-9">: {pangkalan.nomorHp || '085 124 132 056'}</span>
               </div>
             </div>
+          </div>
 
-            <p>
-              Dengan ditertibkannya surat rekomendasi ini, Pangkalan yang bersangkutan dinyatakan <strong>MEMENUHI SYARAT KELENGKAPAN PERIZINAN & KELAYAKAN TEKNIS</strong> untuk mendistribusikan Minyak Tanah Bersubsidi di wilayah Kabupaten Nagekeo sesuai ketentuan Harga Eceran Tertinggi (HET) yang berlaku.
-            </p>
-
-            <div className="p-3 bg-slate-100 rounded-lg border border-slate-300 text-xs text-slate-800 space-y-1 my-2">
-              <p className="font-bold text-slate-900">Ketentuan & Kewajiban Pangkalan:</p>
-              <ul className="list-disc list-inside space-y-0.5 text-[11px] text-slate-700">
-                <li>Menjual Minyak Tanah Subsidi strictly sesuai HET Kabupaten Nagekeo.</li>
-                <li>Mencatat buku penyaluran harian kepada masyarakat konsumen rumah tangga dan usaha mikro.</li>
-                <li>Rekomendasi ini berlaku selama 1 (satu) tahun sejak tanggal diterbitkan.</li>
-              </ul>
+          {/* DIBERIKAN ALOKASI VOLUME MINYAK TANAH */}
+          <div className="space-y-2 text-xs sm:text-sm text-slate-900 leading-relaxed font-serif mb-4">
+            <p className="font-semibold">Diberikan Alokasi Volume Minyak Tanah</p>
+            
+            <div className="pl-4 space-y-1 font-serif">
+              <div className="grid grid-cols-12 gap-1">
+                <span className="col-span-4 sm:col-span-3 font-semibold">Jumlah</span>
+                <span className="col-span-8 sm:col-span-9">: {pangkalan.kuotaBulananLiter ? `${pangkalan.kuotaBulananLiter.toLocaleString('id-ID')} Liter/ bulan` : '5.000 Liter/ bulan'}</span>
+              </div>
+              <div className="grid grid-cols-12 gap-1">
+                <span className="col-span-4 sm:col-span-3 font-semibold">Tempat Pengambilan</span>
+                <span className="col-span-8 sm:col-span-9">: Terima di Tempat.</span>
+              </div>
+              <div className="grid grid-cols-12 gap-1">
+                <span className="col-span-4 sm:col-span-3 font-semibold">Nama Lembaga Penyalur</span>
+                <span className="col-span-8 sm:col-span-9">: {pangkalan.namaAgen || AGEN_INFO.nama}</span>
+              </div>
+              <div className="grid grid-cols-12 gap-1">
+                <span className="col-span-4 sm:col-span-3 font-semibold">Lokasi Pangkalan</span>
+                <span className="col-span-8 sm:col-span-9">: {pangkalan.alamat}, Kel. {pangkalan.kelurahan}, Kecamatan {pangkalan.kecamatan}, Kabupaten Nagekeo</span>
+              </div>
             </div>
+          </div>
 
-            {/* Signature Block */}
-            <div className="pt-6 flex justify-end text-slate-950 font-sans">
-              <div className="text-center w-72 space-y-2">
-                <p className="text-xs font-medium">Mbay, {existingRekomendasi?.tanggalRekomendasi || new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
-                <p className="text-xs font-bold uppercase">
-                  {pimpinanJabatan || 'Kepala Bagian Perekonomian & SDA Setda Kab. Nagekeo'}
+          {/* DENGAN KETENTUAN SEBAGAI BERIKUT */}
+          <div className="space-y-1 text-xs sm:text-sm text-slate-900 leading-relaxed font-serif mb-6">
+            <p className="font-semibold">Dengan ketentuan sebagai berikut :</p>
+            <ol className="list-none space-y-1.5 pl-2 text-justify">
+              <li className="flex gap-2">
+                <span className="shrink-0">1.</span>
+                <span>Rekomendasi diberikan kepada pemohon yang telah melengkapi persyaratan yang ditentukan.</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="shrink-0">2.</span>
+                <span>
+                  Pemegang Rekomendasi wajib menaati semua ketentuan yang berkaitan dengan pendistribusian dan penjualan minyak tanah bersubsidi dengan Harga Eceran Tertinggi (HET) untuk wilayah <strong>Kecamatan {pangkalan.kecamatan}</strong> dengan harga <strong>Rp. {hargaHet.toLocaleString('id-ID')}/Liter</strong> sesuai Keputusan Bupati Nagekeo Nomor {skBupatiNo} tentang Harga Eceran Tertinggi Bahan Bakar Minyak Jenis Minyak Tanah Untuk Keperluan Rumah Tangga, Usaha Kecil, Usaha Perikanan, dan Pelayanan Umum;
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="shrink-0">3.</span>
+                <span>Berperan serta melakukan pengawasan dan ikut menjamin tertib penjualan Bahan Bakar Minyak Tanah Bersubsidi;</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="shrink-0">4.</span>
+                <span>
+                  Pemegang Rekomendasi wajib menaati rekomendasi ini, pelanggaran terhadap rekomendasi ini akan diproses sesuai hukum yang berlaku termasuk mencabut Rekomendasi dan menghentikan pendropingan minyak tanah bersubsidi;
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="shrink-0">5.</span>
+                <span>
+                  Apabila penjualan minyak tanah melebihi Harga Eceran Tertinggi (HET) maka rekomendasi ini akan dicabut sepihak oleh pemerintah.
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="shrink-0">6.</span>
+                <span>
+                  Masa berlaku Rekomendasi satu tahun terhitung sejak ditandatangani Rekomendasi.<br />
+                  <strong>Berlaku sampai dengan tanggal {existingRekomendasi?.berlakuSampai || '19 Mei 2027'}.</strong>
+                </span>
+              </li>
+            </ol>
+          </div>
+
+          {/* SIGNATURE BLOCK */}
+          <div className="pt-2 flex justify-end text-slate-950 font-serif">
+            <div className="text-center w-80 space-y-1">
+              <p className="text-xs sm:text-sm font-medium">
+                Mbay, {existingRekomendasi?.tanggalRekomendasi || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+              </p>
+              <p className="text-xs sm:text-sm font-semibold">
+                Plt. Kepala Bagian Perekonomian dan Sumber Daya Alam
+              </p>
+              <p className="text-xs sm:text-sm font-semibold">
+                Setda Nagekeo,
+              </p>
+
+              {/* QR Code / Digital Signature */}
+              <div className="py-2 flex flex-col items-center justify-center min-h-[110px]">
+                {existingRekomendasi?.status === 'Disetujui & Diterbitkan' && qrCodeDataUrl ? (
+                  <div className="flex flex-col items-center space-y-1">
+                    <img
+                      src={qrCodeDataUrl}
+                      alt="Tanda Tangan Digital QR Code"
+                      className="w-24 h-24 border-2 border-slate-900 p-1 bg-white"
+                    />
+                    <span className="text-[9px] font-mono font-bold text-slate-900">
+                      ✓ TERVERIFIKASI TTD DIGITAL
+                    </span>
+                  </div>
+                ) : (
+                  <div className="w-48 h-20 border border-dashed border-slate-400 flex items-center justify-center text-slate-400 text-xs font-serif italic">
+                    [ Tanda Tangan & Stempel ]
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-1">
+                <p className="text-xs sm:text-sm font-bold uppercase underline decoration-1 text-slate-950">
+                  {pimpinanNama || 'OKTAVIANUS BELI WAWO, ST'}
                 </p>
-
-                {/* Digital QR Signature Box */}
-                <div className="py-2 flex flex-col items-center justify-center min-h-[110px]">
-                  {existingRekomendasi?.status === 'Disetujui & Diterbitkan' && qrCodeDataUrl ? (
-                    <div className="flex flex-col items-center space-y-1">
-                      <img
-                        src={qrCodeDataUrl}
-                        alt="Tanda Tangan Digital QR Code"
-                        className="w-28 h-28 border-2 border-slate-900 p-1 rounded-lg bg-white shadow-sm"
-                      />
-                      <span className="text-[9px] font-mono font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-300">
-                        ✓ TTD DIGITAL SAH (SIPERMATA)
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="w-48 h-20 border-2 border-dashed border-slate-400 rounded-xl flex items-center justify-center text-slate-400 text-xs font-bold italic">
-                      [ Tanda Tangan Digital Pimpinan ]
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-0.5 border-t border-slate-900 pt-1">
-                  <p className="text-xs font-black uppercase text-slate-950 underline decoration-1">
-                    {pimpinanNama || 'MARIA SERVINA, S.E., M.Si.'}
-                  </p>
-                  <p className="text-[11px] font-mono text-slate-800">
-                    NIP. {pimpinanNip || '19780512 200501 2 008'}
-                  </p>
-                </div>
+                <p className="text-xs font-medium text-slate-800">
+                  Pembina – IV/a
+                </p>
+                <p className="text-xs font-mono text-slate-800">
+                  NIP. {pimpinanNip || '19770328 200604 1 021'}
+                </p>
               </div>
             </div>
           </div>

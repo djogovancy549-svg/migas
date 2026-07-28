@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Pangkalan, SuratPernyataanData } from '../types';
-import { Printer, Plus, Award, RefreshCw, UserPlus, CheckCircle2, Building } from 'lucide-react';
+import { Pangkalan, SuratPernyataanData, HetKecamatan } from '../types';
+import { Printer, Plus, Award, RefreshCw, UserPlus, CheckCircle2, Building, DollarSign } from 'lucide-react';
 import { AGEN_INFO } from '../data/pangkalanData';
 
 interface SuratPernyataanViewProps {
   pangkalanList: Pangkalan[];
   selectedPangkalan?: Pangkalan | null;
+  hetList?: HetKecamatan[];
   onSavePangkalan?: (pangkalan: Pangkalan) => void;
 }
 
 export const SuratPernyataanView: React.FC<SuratPernyataanViewProps> = ({
   pangkalanList,
   selectedPangkalan,
+  hetList = [],
   onSavePangkalan,
 }) => {
   const [mode, setMode] = useState<'existing' | 'new'>(
@@ -30,6 +32,15 @@ export const SuratPernyataanView: React.FC<SuratPernyataanViewProps> = ({
     year: 'numeric',
   });
 
+  const [kecamatan, setKecamatan] = useState<string>(currentPangkalan?.kecamatan || 'Aesesa');
+  const [kelurahan, setKelurahan] = useState<string>(currentPangkalan?.kelurahan || 'Mbay');
+
+  // Helper to find HET price for selected kecamatan
+  const getHetPrice = (kecName: string) => {
+    const match = hetList.find((h) => h.kecamatan.toLowerCase().trim() === kecName.toLowerCase().trim());
+    return match ? match.hargaHetPerLiter : 4660;
+  };
+
   const [formData, setFormData] = useState<SuratPernyataanData>({
     nama: currentPangkalan?.nama || '',
     nomorIdentitas: currentPangkalan?.nik || '',
@@ -40,15 +51,13 @@ export const SuratPernyataanView: React.FC<SuratPernyataanViewProps> = ({
     namaPangkalan: currentPangkalan ? `Pangkalan ${currentPangkalan.nama} (${currentPangkalan.id})` : '',
     namaUsaha: currentPangkalan?.namaUsaha || '',
     alamatUsaha: currentPangkalan ? `${currentPangkalan.alamat}, Kel. ${currentPangkalan.kelurahan}, Kec. ${currentPangkalan.kecamatan}, Kab. Nagekeo` : '',
-    hargaHetPerLiter: 5000,
-    namaAgen: AGEN_INFO.nama,
+    hargaHetPerLiter: getHetPrice(currentPangkalan?.kecamatan || 'Aesesa'),
+    namaAgen: currentPangkalan?.namaAgen || AGEN_INFO.nama,
     tanggalSurat: todayStr,
     kotaSurat: 'Mbay',
     includeMeteraiPlaceholder: true,
   });
 
-  const [kecamatan, setKecamatan] = useState<string>(currentPangkalan?.kecamatan || 'Aesesa');
-  const [kelurahan, setKelurahan] = useState<string>(currentPangkalan?.kelurahan || 'Mbay');
   const [savedSuccessMsg, setSavedSuccessMsg] = useState<string | null>(null);
 
   useEffect(() => {
@@ -60,6 +69,8 @@ export const SuratPernyataanView: React.FC<SuratPernyataanViewProps> = ({
 
   useEffect(() => {
     if (mode === 'existing' && currentPangkalan) {
+      const kecName = currentPangkalan.kecamatan || 'Aesesa';
+      const matchedPrice = getHetPrice(kecName);
       setFormData((prev) => ({
         ...prev,
         nama: currentPangkalan.nama,
@@ -71,11 +82,12 @@ export const SuratPernyataanView: React.FC<SuratPernyataanViewProps> = ({
         namaUsaha: currentPangkalan.namaUsaha || `UD. ${currentPangkalan.nama}`,
         alamatUsaha: `${currentPangkalan.alamat}, Kel. ${currentPangkalan.kelurahan}, Kec. ${currentPangkalan.kecamatan}, Kab. Nagekeo`,
         noKontak: currentPangkalan.nomorHp || prev.noKontak || '',
+        hargaHetPerLiter: matchedPrice,
       }));
-      setKecamatan(currentPangkalan.kecamatan || 'Aesesa');
+      setKecamatan(kecName);
       setKelurahan(currentPangkalan.kelurahan || 'Mbay');
     }
-  }, [activePangkalanId, currentPangkalan, mode]);
+  }, [activePangkalanId, currentPangkalan, mode, hetList]);
 
   const handleStartNewLetter = () => {
     setMode('new');
@@ -315,7 +327,30 @@ export const SuratPernyataanView: React.FC<SuratPernyataanViewProps> = ({
                 />
               </div>
 
-              <div className="sm:col-span-2">
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Kecamatan / Lokasi Pangkalan</label>
+                <select
+                  value={kecamatan}
+                  onChange={(e) => {
+                    const selectedKec = e.target.value;
+                    setKecamatan(selectedKec);
+                    const matchedPrice = getHetPrice(selectedKec);
+                    setFormData({ ...formData, hargaHetPerLiter: matchedPrice });
+                  }}
+                  className="w-full p-3 bg-slate-900 border-2 border-slate-700 rounded-xl text-white font-bold text-xs sm:text-sm focus:border-emerald-500 focus:outline-none min-h-[44px]"
+                >
+                  {hetList.map((h) => (
+                    <option key={h.kecamatan} value={h.kecamatan}>
+                      Kec. {h.kecamatan} (HET Rp {h.hargaHetPerLiter.toLocaleString('id-ID')})
+                    </option>
+                  ))}
+                  {!hetList.some((h) => h.kecamatan.toLowerCase() === kecamatan.toLowerCase()) && (
+                    <option value={kecamatan}>{kecamatan}</option>
+                  )}
+                </select>
+              </div>
+
+              <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1">Alamat Tempat Usaha Pangkalan</label>
                 <input
                   type="text"
@@ -327,12 +362,14 @@ export const SuratPernyataanView: React.FC<SuratPernyataanViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Harga HET per Liter (Rp)</label>
+                <label className="block text-xs font-bold text-amber-300 mb-1">
+                  Harga HET per Liter (Otomatis Sesuai Kecamatan)
+                </label>
                 <input
                   type="number"
                   value={formData.hargaHetPerLiter}
                   onChange={(e) => setFormData({ ...formData, hargaHetPerLiter: Number(e.target.value) })}
-                  className="w-full p-3 bg-slate-900 border-2 border-slate-700 rounded-xl text-emerald-400 font-bold text-xs sm:text-sm focus:border-emerald-500 focus:outline-none min-h-[44px]"
+                  className="w-full p-3 bg-slate-900 border-2 border-amber-500/50 rounded-xl text-amber-300 font-extrabold text-xs sm:text-sm focus:border-amber-400 focus:outline-none min-h-[44px]"
                 />
               </div>
             </div>

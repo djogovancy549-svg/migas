@@ -1,3 +1,10 @@
+export interface HetKecamatan {
+  kecamatan: string;
+  hargaHetPerLiter: number;
+  skBupatiNomor?: string;
+  keterangan?: string;
+}
+
 export interface AgenCompany {
   id: string;
   nama: string;

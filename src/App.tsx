@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Pangkalan, PersyaratanStatus, MasterRequirementItem, UploadedDocument, RekomendasiPerizinan, AgenCompany } from './types';
-import { INITIAL_PANGKALAN_LIST, INITIAL_CHECKLIST_STATUS, INITIAL_AGEN_LIST, PEMDA_INFO } from './data/pangkalanData';
+import { Pangkalan, PersyaratanStatus, MasterRequirementItem, UploadedDocument, RekomendasiPerizinan, AgenCompany, HetKecamatan } from './types';
+import { INITIAL_PANGKALAN_LIST, INITIAL_CHECKLIST_STATUS, INITIAL_AGEN_LIST, INITIAL_HET_LIST, PEMDA_INFO } from './data/pangkalanData';
 import { INITIAL_MASTER_REQUIREMENTS } from './data/masterRequirements';
 import { safeLocalStorage } from './lib/storage';
 import { initAuthListener } from './lib/googleAuth';
@@ -52,6 +52,25 @@ export default function App() {
     }
     return INITIAL_AGEN_LIST;
   });
+
+  // Dynamic HET per Kecamatan List state (Editable by Admin)
+  const [hetList, setHetList] = useState<HetKecamatan[]>(() => {
+    const saved = safeLocalStorage.getItem('sipermata_het_list');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {
+        console.error('Failed to parse saved het list', e);
+      }
+    }
+    return INITIAL_HET_LIST;
+  });
+
+  const handleUpdateHetList = (updated: HetKecamatan[]) => {
+    setHetList(updated);
+    safeLocalStorage.setItem('sipermata_het_list', JSON.stringify(updated));
+  };
 
   // Current Google User and Access Token state
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
@@ -600,6 +619,7 @@ export default function App() {
             <SuratPernyataanView
               pangkalanList={pangkalanList}
               selectedPangkalan={selectedPangkalanForLetter}
+              hetList={hetList}
               onSavePangkalan={handleSavePangkalan}
             />
           )}
@@ -634,9 +654,11 @@ export default function App() {
               pimpinanNip={pimpinanInfo.nip}
               pimpinanJabatan={pimpinanInfo.jabatan}
               agenList={agenList}
+              hetList={hetList}
               onUpdateAuthorizedEmails={(updated) => setAuthorizedAdminEmails(updated)}
               onUpdatePimpinanInfo={(updated) => setPimpinanInfo(updated)}
               onUpdateAgenList={(updated) => setAgenList(updated)}
+              onUpdateHetList={handleUpdateHetList}
               onRequestAdminAuth={() => setAuthModalState({ isOpen: true, targetRole: 'admin' })}
               onExitAdminMode={() => setIsAdminMode(false)}
               onClearData={handleClearDummyData}
@@ -696,6 +718,7 @@ export default function App() {
         pimpinanNip={pimpinanInfo.nip}
         pimpinanJabatan={pimpinanInfo.jabatan}
         isAdminMode={isAdminMode}
+        hetList={hetList}
         onClose={() => {
           setIsRekomendasiModalOpen(false);
           setRekomendasiTargetPangkalan(null);
