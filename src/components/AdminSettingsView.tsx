@@ -17,9 +17,15 @@ import {
   Settings,
   HelpCircle,
   LogOut,
-  FolderSync
+  Award,
+  Edit,
+  Eye,
+  EyeOff,
+  Plus,
+  Phone,
+  MapPin
 } from 'lucide-react';
-import { Pangkalan, UploadedDocument } from '../types';
+import { Pangkalan, UploadedDocument, AgenCompany } from '../types';
 import { safeLocalStorage } from '../lib/storage';
 import { exportToGoogleSheets, uploadFileToGoogleDrive } from '../lib/googleDriveSheetsService';
 
@@ -30,7 +36,14 @@ interface AdminSettingsViewProps {
   authorizedAdminEmails: string[];
   currentUserEmail?: string | null;
   googleAccessToken?: string | null;
+  pimpinanPin: string;
+  pimpinanNama: string;
+  pimpinanNip: string;
+  pimpinanJabatan: string;
+  agenList: AgenCompany[];
   onUpdateAuthorizedEmails: (emails: string[]) => void;
+  onUpdatePimpinanInfo: (info: { pin: string; nama: string; nip: string; jabatan: string }) => void;
+  onUpdateAgenList: (agenList: AgenCompany[]) => void;
   onRequestAdminAuth: () => void;
   onExitAdminMode: () => void;
   onClearData: () => void;
@@ -43,7 +56,14 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
   authorizedAdminEmails,
   currentUserEmail,
   googleAccessToken,
+  pimpinanPin,
+  pimpinanNama,
+  pimpinanNip,
+  pimpinanJabatan,
+  agenList = [],
   onUpdateAuthorizedEmails,
+  onUpdatePimpinanInfo,
+  onUpdateAgenList,
   onRequestAdminAuth,
   onExitAdminMode,
   onClearData,
@@ -51,6 +71,25 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
   const [newEmailInput, setNewEmailInput] = useState('');
   const [customSheetInput, setCustomSheetInput] = useState('');
   const [isEditingSheetId, setIsEditingSheetId] = useState(false);
+
+  // Leader Pimpinan Pin edit form - HIDDEN BY DEFAULT
+  const [showPimpinanPin, setShowPimpinanPin] = useState(false);
+  const [editPimpinanPin, setEditPimpinanPin] = useState(pimpinanPin);
+  const [editPimpinanNama, setEditPimpinanNama] = useState(pimpinanNama);
+  const [editPimpinanNip, setEditPimpinanNip] = useState(pimpinanNip);
+  const [editPimpinanJabatan, setEditPimpinanJabatan] = useState(pimpinanJabatan);
+  const [isEditingPimpinan, setIsEditingPimpinan] = useState(false);
+
+  // Admin PIN visibility toggle - HIDDEN BY DEFAULT
+  const [showAdminPin, setShowAdminPin] = useState(false);
+
+  // Agen company add/edit state
+  const [isAddingAgen, setIsAddingAgen] = useState(false);
+  const [newAgenNama, setNewAgenNama] = useState('');
+  const [newAgenSingkatan, setNewAgenSingkatan] = useState('');
+  const [newAgenAlamat, setNewAgenAlamat] = useState('');
+  const [newAgenTelepon, setNewAgenTelepon] = useState('');
+  const [newAgenPJ, setNewAgenPJ] = useState('');
 
   const [sheetId, setSheetId] = useState<string | null>(() => {
     return safeLocalStorage.getItem('pne_nagekeo_google_sheet_id');
@@ -71,6 +110,73 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
     type: 'success' | 'error' | 'info';
     message: string;
   } | null>(null);
+
+  // Save Pimpinan Info
+  const handleSavePimpinanInfo = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editPimpinanPin.trim()) {
+      setNotification({ type: 'error', message: 'PIN Pimpinan tidak boleh kosong.' });
+      return;
+    }
+
+    onUpdatePimpinanInfo({
+      pin: editPimpinanPin.trim(),
+      nama: editPimpinanNama.trim(),
+      nip: editPimpinanNip.trim(),
+      jabatan: editPimpinanJabatan.trim(),
+    });
+
+    setIsEditingPimpinan(false);
+    setNotification({
+      type: 'success',
+      message: 'Informasi & PIN Tanda Tangan Pimpinan berhasil diperbarui!',
+    });
+  };
+
+  // Add New Agen Company
+  const handleAddAgenCompany = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAgenNama.trim()) {
+      setNotification({ type: 'error', message: 'Nama perusahaan Agen wajib diisi.' });
+      return;
+    }
+
+    const newAgen: AgenCompany = {
+      id: 'agen_' + Date.now(),
+      nama: newAgenNama.trim(),
+      singkatan: newAgenSingkatan.trim() || undefined,
+      alamat: newAgenAlamat.trim() || 'Kabupaten Nagekeo',
+      telepon: newAgenTelepon.trim() || undefined,
+      penanggungJawab: newAgenPJ.trim() || undefined,
+      kabupaten: 'NAGEKEO',
+      provinsi: 'NUSA TENGGARA TIMUR',
+    };
+
+    onUpdateAgenList([...agenList, newAgen]);
+    setNewAgenNama('');
+    setNewAgenSingkatan('');
+    setNewAgenAlamat('');
+    setNewAgenTelepon('');
+    setNewAgenPJ('');
+    setIsAddingAgen(false);
+
+    setNotification({
+      type: 'success',
+      message: `Perusahaan Agen "${newAgen.nama}" berhasil ditambahkan!`,
+    });
+  };
+
+  // Delete Agen Company
+  const handleDeleteAgenCompany = (agenId: string, agenNama: string) => {
+    if (window.confirm(`Apakah Anda yakin ingin menghapus perusahaan Agen "${agenNama}"?`)) {
+      const updated = agenList.filter((a) => a.id !== agenId);
+      onUpdateAgenList(updated);
+      setNotification({
+        type: 'success',
+        message: `Agen "${agenNama}" berhasil dihapus.`,
+      });
+    }
+  };
 
   // Add new Admin Email
   const handleAddAdminEmail = (e: React.FormEvent) => {
@@ -116,17 +222,17 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
     const updated = authorizedAdminEmails.filter((e) => e !== emailToRemove);
     onUpdateAuthorizedEmails(updated);
     setNotification({
-      type: 'info',
-      message: `Email ${emailToRemove} dihapus dari daftar Admin.`,
+      type: 'success',
+      message: `Email ${emailToRemove} telah dihapus dari daftar Admin.`,
     });
   };
 
-  // Sync to Central Google Sheet
+  // Sync Google Sheet Admin
   const handleSyncToAdminSheet = async () => {
     if (!googleAccessToken) {
       setNotification({
         type: 'error',
-        message: 'Silakan masuk dengan Akun Google Admin terlebih dahulu di tombol login.',
+        message: 'Silakan login Google dengan akun Admin terlebih dahulu.',
       });
       return;
     }
@@ -136,27 +242,29 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
       setNotification(null);
 
       const res = await exportToGoogleSheets(googleAccessToken, pangkalanList, sheetId || undefined);
-      setSheetId(res.spreadsheetId);
-      setSheetUrl(res.spreadsheetUrl);
-      
-      const adminMail = currentUserEmail || 'Admin Nagekeo';
-      setConnectedAdminEmail(adminMail);
 
-      safeLocalStorage.setItem('pne_nagekeo_google_sheet_id', res.spreadsheetId);
-      safeLocalStorage.setItem('pne_nagekeo_google_sheet_url', res.spreadsheetUrl);
-      safeLocalStorage.setItem('pne_nagekeo_connected_admin_email', adminMail);
+      if (res.spreadsheetId) {
+        setSheetId(res.spreadsheetId);
+        setSheetUrl(res.spreadsheetUrl);
+        safeLocalStorage.setItem('pne_nagekeo_google_sheet_id', res.spreadsheetId);
+        safeLocalStorage.setItem('pne_nagekeo_google_sheet_url', res.spreadsheetUrl);
 
-      setNotification({
-        type: 'success',
-        message: `Berhasil menyinkronkan data ${pangkalanList.length} pangkalan ke Google Sheet Admin Pusat!`,
-      });
+        if (currentUserEmail) {
+          setConnectedAdminEmail(currentUserEmail);
+          safeLocalStorage.setItem('pne_nagekeo_connected_admin_email', currentUserEmail);
+        }
+
+        setNotification({
+          type: 'success',
+          message: `Berhasil sinkronisasi ${pangkalanList.length} pangkalan ke Google Sheet Admin Pusat!`,
+        });
+      }
     } catch (err: any) {
-      console.error(err);
       setNotification({
         type: 'error',
         message: err.message || 'Gagal menyimpan ke Google Sheet Admin Pusat.',
       });
-    } finally {
+    } fontFinally: {
       setIsSyncingSheets(false);
     }
   };
@@ -253,13 +361,13 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg sm:text-xl font-black text-white">Pengaturan Admin & Integrasi Pusat</h2>
+                <h2 className="text-lg sm:text-xl font-black text-white">Pengaturan Admin & Integrasi System</h2>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
                   KHUSUS ADMIN
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
-                Kelola hak akses multi-admin, tautan Google Sheet Admin Pusat Pemda Nagekeo, dan sinkronisasi arsip.
+                Kelola hak akses multi-admin, daftar Perusahaan Agen Penyalur, PIN Tanda Tangan Pimpinan, serta Google Sheet Admin Pusat.
               </p>
             </div>
           </div>
@@ -312,8 +420,287 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
         </div>
       )}
 
+      {/* Panel 1: Multi-Agen Company Management (NEW REQUIREMENT) */}
+      <div className="bg-slate-900/90 border-2 border-blue-500/40 rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2.5 bg-blue-500/20 text-blue-400 rounded-xl border border-blue-500/30">
+              <Building2 className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-white">Daftar Perusahaan Agen Penyalur Resmi (Multi-Agen)</h3>
+              <p className="text-[11px] text-slate-400">
+                Kelola nama-nama agen penyalur resmi minyak tanah yang beroperasi di Kabupaten Nagekeo
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setIsAddingAgen(!isAddingAgen)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs transition cursor-pointer shrink-0 shadow-md shadow-blue-500/10"
+          >
+            <Plus className="w-4 h-4" />
+            <span>{isAddingAgen ? 'Batal Tambah' : 'Tambah Perusahaan Agen'}</span>
+          </button>
+        </div>
+
+        {/* Form Add Agen Company */}
+        {isAddingAgen && (
+          <form onSubmit={handleAddAgenCompany} className="p-4 bg-slate-950 rounded-xl border border-blue-500/30 space-y-3">
+            <h4 className="text-xs font-bold text-blue-300">Input Perusahaan Agen Baru:</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                  Nama Perusahaan Agen *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="misal: PT. NAGEKEO MIGAS SEJAHTERA"
+                  value={newAgenNama}
+                  onChange={(e) => setNewAgenNama(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                  Singkatan (Opsional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="misal: PT. NMS"
+                  value={newAgenSingkatan}
+                  onChange={(e) => setNewAgenSingkatan(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                  Alamat Agen / Kantor
+                </label>
+                <input
+                  type="text"
+                  placeholder="misal: Jln. Soekarno-Hatta Mbay"
+                  value={newAgenAlamat}
+                  onChange={(e) => setNewAgenAlamat(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                  No. Telepon / Kontak
+                </label>
+                <input
+                  type="text"
+                  placeholder="misal: 0812-xxxx-xxxx"
+                  value={newAgenTelepon}
+                  onChange={(e) => setNewAgenTelepon(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsAddingAgen(false)}
+                className="px-3 py-1.5 text-xs text-slate-400 hover:text-white"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs transition"
+              >
+                Simpan Perusahaan Agen
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* Agen Company Cards List */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {agenList.map((agen) => (
+            <div
+              key={agen.id}
+              className="bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-start justify-between gap-3"
+            >
+              <div className="space-y-1.5 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-slate-100 text-sm truncate">{agen.nama}</span>
+                  {agen.singkatan && (
+                    <span className="text-[10px] font-mono bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded border border-blue-500/30">
+                      {agen.singkatan}
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-slate-400 flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                  <span className="truncate">{agen.alamat || 'Nagekeo, NTT'}</span>
+                </p>
+                {agen.telepon && (
+                  <p className="text-[11px] text-slate-400 flex items-center gap-1.5">
+                    <Phone className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                    <span>{agen.telepon}</span>
+                  </p>
+                )}
+              </div>
+
+              {agenList.length > 1 && (
+                <button
+                  onClick={() => handleDeleteAgenCompany(agen.id, agen.nama)}
+                  className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition shrink-0"
+                  title="Hapus Perusahaan Agen"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Panel Pimpinan PIN & Digital Signature Setting */}
+      <div className="bg-slate-900/90 border-2 border-amber-500/40 rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2.5 bg-amber-500/20 text-amber-400 rounded-xl border border-amber-500/30">
+              <Award className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-white">Kelola PIN & Tanda Tangan Digital Pimpinan</h3>
+              <p className="text-[11px] text-slate-400">PIN khusus untuk menyetujui dan membubuhkan TTD QR Code pada Surat Rekomendasi</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowPimpinanPin(!showPimpinanPin)}
+              className="p-1.5 text-xs text-slate-400 hover:text-white bg-slate-800 rounded-lg flex items-center gap-1.5 border border-slate-700"
+              title="Sembunyikan/Tampilkan PIN Pimpinan"
+            >
+              {showPimpinanPin ? <EyeOff className="w-3.5 h-3.5 text-amber-400" /> : <Eye className="w-3.5 h-3.5 text-slate-400" />}
+              <span>{showPimpinanPin ? 'Sembunyikan' : 'Tampilkan PIN'}</span>
+            </button>
+
+            <button
+              onClick={() => setIsEditingPimpinan(!isEditingPimpinan)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs transition cursor-pointer"
+            >
+              <Edit className="w-3.5 h-3.5" />
+              <span>{isEditingPimpinan ? 'Batal Edit' : 'Edit PIN / Data Pimpinan'}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Display Current Leader PIN to Admin (Masked by default) */}
+        <div className="p-4 bg-slate-950 rounded-xl border border-amber-500/30 space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+            <div>
+              <span className="text-[10px] uppercase font-semibold text-slate-500 block">PIN Tanda Tangan Pimpinan:</span>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="font-mono font-black text-amber-400 text-sm bg-slate-900 px-3 py-1 rounded border border-amber-500/40 tracking-wider">
+                  {showPimpinanPin ? pimpinanPin : '••••••••'}
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <span className="text-[10px] uppercase font-semibold text-slate-500 block">Nama Pimpinan:</span>
+              <span className="font-bold text-slate-200 mt-0.5 block">{pimpinanNama}</span>
+            </div>
+
+            <div>
+              <span className="text-[10px] uppercase font-semibold text-slate-500 block">NIP Pimpinan:</span>
+              <span className="font-mono text-slate-300 mt-0.5 block">{pimpinanNip}</span>
+            </div>
+
+            <div>
+              <span className="text-[10px] uppercase font-semibold text-slate-500 block">Jabatan:</span>
+              <span className="text-slate-300 mt-0.5 block">{pimpinanJabatan}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Form Edit Leader PIN & Data */}
+        {isEditingPimpinan && (
+          <form onSubmit={handleSavePimpinanInfo} className="p-4 bg-slate-950 rounded-xl border border-slate-800 space-y-3">
+            <h4 className="text-xs font-bold text-amber-300">Edit Data & PIN Pimpinan:</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                  PIN Tanda Tangan Pimpinan *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editPimpinanPin}
+                  onChange={(e) => setEditPimpinanPin(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-amber-400 focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                  Nama Lengkap & Gelar *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editPimpinanNama}
+                  onChange={(e) => setEditPimpinanNama(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                  NIP Pimpinan *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editPimpinanNip}
+                  onChange={(e) => setEditPimpinanNip(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                  Jabatan Lengkap *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editPimpinanJabatan}
+                  onChange={(e) => setEditPimpinanJabatan(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsEditingPimpinan(false)}
+                className="px-3 py-1.5 text-xs text-slate-400 hover:text-white"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-xs transition"
+              >
+                Simpan Perubahan Pimpinan
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Panel 1: Google Sheet Admin Pusat Connection */}
+        {/* Panel Google Sheet Admin Pusat Connection */}
         <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
           <div className="flex items-center justify-between border-b border-slate-800 pb-3">
             <div className="flex items-center gap-2.5">
@@ -322,7 +709,7 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
               </div>
               <div>
                 <h3 className="text-sm font-bold text-white">Google Sheet Admin Pusat</h3>
-                <p className="text-[11px] text-slate-400">1x Tautan awal untuk menerima seluruh input data user</p>
+                <p className="text-[11px] text-slate-400">Tautan pusat untuk sinkronisasi data seluruh pangkalan</p>
               </div>
             </div>
 
@@ -441,7 +828,7 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
           </div>
         </div>
 
-        {/* Panel 2: Multi-Admin Email Management */}
+        {/* Panel Multi-Admin Email Management */}
         <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
           <div className="flex items-center justify-between border-b border-slate-800 pb-3">
             <div className="flex items-center gap-2.5">
@@ -456,7 +843,7 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
           </div>
 
           {/* List of Authorized Admins */}
-          <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+          <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
             {authorizedAdminEmails.map((email, idx) => {
               const isCurrentUser = currentUserEmail?.toLowerCase() === email.toLowerCase();
               return (
@@ -509,50 +896,25 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
             </div>
           </form>
 
-          {/* Master PIN Info */}
+          {/* Master PIN Info (Masked by default) */}
           <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-800/80 flex items-center justify-between text-xs">
             <div className="flex items-center gap-2 text-slate-400">
               <Key className="w-4 h-4 text-amber-400 shrink-0" />
-              <span>PIN Utama Akses Admin Manual:</span>
+              <span>PIN Akses Mode Admin System:</span>
             </div>
-            <span className="font-mono font-bold text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
-              migas2026
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Guide Card: User vs Admin Separation Explanation */}
-      <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-3">
-        <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4" />
-          <span>Informasi Pembagian Peran (Sisi Pengguna vs Sisi Admin)</span>
-        </h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-300">
-          <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800/80 space-y-1.5">
-            <p className="font-bold text-white flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-slate-400"></span>
-              Sisi Pengguna / Pemohon Pangkalan:
-            </p>
-            <ul className="list-disc list-inside space-y-1 text-slate-400 text-[11px] leading-relaxed">
-              <li>Hanya dapat mengakses menu Cetak Surat Permohonan & Surat Pernyataan.</li>
-              <li>Dapat memilih pangkalan, memeriksa status syarat perizinan, dan upload berkas.</li>
-              <li>TIDAK DAPAT mengubah data master pangkalan atau menghapus syarat.</li>
-              <li>Seluruh berkas yang diunggah otomatis tersimpan ke Google Sheet/Drive Admin Pusat.</li>
-            </ul>
-          </div>
-
-          <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800/80 space-y-1.5">
-            <p className="font-bold text-white flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-amber-400"></span>
-              Sisi Admin Pemda Nagekeo:
-            </p>
-            <ul className="list-disc list-inside space-y-1 text-slate-400 text-[11px] leading-relaxed">
-              <li>Dapat mengakses seluruh menu termasuk Data Master Pangkalan & Pengaturan Admin.</li>
-              <li>Dapat menyetujui / menolak berkas pangkalan dan menambahkan catatan verifikasi.</li>
-              <li>Bisa menambah/menghapus syarat master baru.</li>
-              <li>Multi-admin dapat mengelola daftar email pengelola resmi.</li>
-            </ul>
+            <div className="flex items-center gap-2">
+              <span className="font-mono font-bold text-amber-300 bg-amber-500/10 px-2.5 py-0.5 rounded border border-amber-500/20 tracking-wider">
+                {showAdminPin ? 'migas2026' : '••••••••'}
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowAdminPin(!showAdminPin)}
+                className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800 transition"
+                title="Sembunyikan/Tampilkan PIN Admin"
+              >
+                {showAdminPin ? <EyeOff className="w-3.5 h-3.5 text-amber-400" /> : <Eye className="w-3.5 h-3.5" />}
+              </button>
+            </div>
           </div>
         </div>
       </div>

@@ -1,6 +1,6 @@
 {
-  "name": "Sistem Pangkalan Minyak Tanah Nagekeo",
-  "description": "Aplikasi pengelolaan pangkalan minyak tanah, verifikasi perizinan, dan pembuat otomatis Surat Permohonan & Surat Pernyataan Bagian Perekonomian dan SDA Setda Kabupaten Nagekeo, NTT.",
+  "name": "SIPERMATA - Sistem Pengurusan Perizinan Minyak Tanah",
+  "description": "SIPERMATA (Sistem Informasi & Pengurusan Perizinan Minyak Tanah) - Pelayanan rekomendasi pangkalan minyak tanah bersubsidi Bagian Perekonomian dan SDA Setda Kabupaten Nagekeo, NTT.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

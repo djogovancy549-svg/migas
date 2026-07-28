@@ -6,7 +6,7 @@ import {
   Award,
   ClipboardCheck,
   Settings,
-  ShieldCheck,
+  Building2,
   ChevronLeft,
   ChevronRight,
   LucideIcon,
@@ -18,7 +18,8 @@ export type TabType =
   | 'surat-permohonan'
   | 'surat-pernyataan'
   | 'persyaratan'
-  | 'admin-settings';
+  | 'admin-settings'
+  | 'portal-agen';
 
 interface TabItem {
   id: TabType;
@@ -32,6 +33,8 @@ interface TabNavigationProps {
   setActiveTab: (tab: TabType) => void;
   pangkalanCount: number;
   isAdminMode: boolean;
+  isAgenMode: boolean;
+  licensedCount?: number;
 }
 
 export const TabNavigation: React.FC<TabNavigationProps> = ({
@@ -39,12 +42,14 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
   setActiveTab,
   pangkalanCount,
   isAdminMode,
+  isAgenMode,
+  licensedCount = 0,
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
-  // Define tabs for Admin Mode vs User Mode
+  // Tabs for Admin Mode
   const adminTabs: TabItem[] = [
     {
       id: 'dashboard',
@@ -56,6 +61,12 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
       label: 'Data Master Pangkalan',
       icon: Store,
       badge: pangkalanCount,
+    },
+    {
+      id: 'portal-agen',
+      label: 'Portal Agen & Pangkalan Berizin',
+      icon: Building2,
+      badge: licensedCount,
     },
     {
       id: 'persyaratan',
@@ -74,11 +85,42 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
     },
     {
       id: 'admin-settings',
-      label: 'Pengaturan Admin & Sync',
+      label: 'Pengaturan Admin & Multi-Agen',
       icon: Settings,
     },
   ];
 
+  // Tabs for Agen Mode
+  const agenTabs: TabItem[] = [
+    {
+      id: 'portal-agen',
+      label: 'Portal Agen (Pangkalan Berizin)',
+      icon: Building2,
+      badge: licensedCount,
+    },
+    {
+      id: 'dashboard',
+      label: 'Dashboard & Informasi',
+      icon: LayoutDashboard,
+    },
+    {
+      id: 'persyaratan',
+      label: 'Verifikasi Syarat Dokumen',
+      icon: ClipboardCheck,
+    },
+    {
+      id: 'surat-permohonan',
+      label: 'Cetak Surat Permohonan',
+      icon: FileText,
+    },
+    {
+      id: 'surat-pernyataan',
+      label: 'Cetak Surat Pernyataan',
+      icon: Award,
+    },
+  ];
+
+  // Tabs for Customer / Public Mode
   const userTabs: TabItem[] = [
     {
       id: 'dashboard',
@@ -102,13 +144,12 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
     },
   ];
 
-  const tabs = isAdminMode ? adminTabs : userTabs;
+  const visibleTabs = isAdminMode ? adminTabs : isAgenMode ? agenTabs : userTabs;
 
-  // Check scroll positions
+  // Scroll visibility checking
   const checkScroll = () => {
-    const el = scrollContainerRef.current;
-    if (!el) return;
-    const { scrollLeft, scrollWidth, clientWidth } = el;
+    if (!scrollContainerRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
     setCanScrollLeft(scrollLeft > 2);
     setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 2);
   };
@@ -117,108 +158,77 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
     checkScroll();
     window.addEventListener('resize', checkScroll);
     return () => window.removeEventListener('resize', checkScroll);
-  }, [tabs, isAdminMode]);
+  }, [visibleTabs]);
 
-  // Scroll manually with buttons
-  const handleScroll = (direction: 'left' | 'right') => {
-    const el = scrollContainerRef.current;
-    if (!el) return;
-    const scrollAmount = direction === 'left' ? -220 : 220;
-    el.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+  const scroll = (direction: 'left' | 'right') => {
+    if (!scrollContainerRef.current) return;
+    const scrollAmount = direction === 'left' ? -200 : 200;
+    scrollContainerRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
   };
 
-  // Scroll active tab into view smoothly
-  useEffect(() => {
-    const el = scrollContainerRef.current;
-    if (!el) return;
-    const activeBtn = el.querySelector<HTMLButtonElement>(`[data-tab-id="${activeTab}"]`);
-    if (activeBtn) {
-      activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-    }
-  }, [activeTab]);
-
   return (
-    <div className="bg-slate-950/95 border-b border-slate-800/80 backdrop-blur-md print:hidden sticky top-[62px] sm:top-[69px] z-30 shadow-md">
-      <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 flex items-center justify-between">
-        {/* Scrollable Container Wrapper with Arrows & Gradient Fades */}
-        <div className="relative flex-1 flex items-center min-w-0">
-          {/* Scroll Left Button */}
-          {canScrollLeft && (
-            <div className="absolute left-0 top-0 bottom-0 z-10 flex items-center pr-2 bg-gradient-to-r from-slate-950 via-slate-950/90 to-transparent pl-1">
-              <button
-                onClick={() => handleScroll('left')}
-                className="p-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-amber-400 border border-amber-500/30 shadow-lg transition transform hover:scale-105 active:scale-95 cursor-pointer"
-                title="Geser Kiri"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-            </div>
-          )}
-
-          {/* Navigation Bar */}
-          <nav
-            ref={scrollContainerRef}
-            onScroll={checkScroll}
-            className="flex space-x-1.5 sm:space-x-2 overflow-x-auto py-2.5 px-1 scrollbar-none touch-pan-x flex-1 scroll-smooth"
-            aria-label="Tabs"
+    <div className="bg-slate-900 border-b border-slate-800 shadow-md sticky top-[61px] sm:top-[69px] z-30 print:hidden">
+      <div className="max-w-7xl mx-auto px-2 sm:px-6 relative flex items-center">
+        {/* Left Scroll Gradient Arrow */}
+        {canScrollLeft && (
+          <button
+            onClick={() => scroll('left')}
+            className="absolute left-0 z-10 h-full px-1.5 bg-gradient-to-r from-slate-900 via-slate-900/90 to-transparent text-amber-400 hover:text-amber-300 transition flex items-center justify-center cursor-pointer"
+            aria-label="Scroll Kiri"
           >
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  data-tab-id={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`inline-flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-4 py-2 text-xs font-bold rounded-xl transition whitespace-nowrap cursor-pointer shrink-0 min-h-[40px] select-none ${
-                    isActive
-                      ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 ring-2 ring-amber-400/30'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-900/90 border border-slate-800/80 bg-slate-900/50'
-                  }`}
-                >
-                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-slate-950' : 'text-amber-400'}`} />
-                  <span className="text-[11px] sm:text-xs">{tab.label}</span>
-                  {tab.badge !== undefined && (
-                    <span
-                      className={`ml-1 px-1.5 py-0.2 text-[10px] font-mono font-bold rounded-full ${
-                        isActive ? 'bg-slate-950 text-amber-300' : 'bg-slate-800 text-amber-400 border border-amber-500/20'
-                      }`}
-                    >
-                      {tab.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </nav>
+            <ChevronLeft className="w-5 h-5 bg-slate-950/80 rounded-full border border-slate-700 shadow-md p-0.5" />
+          </button>
+        )}
 
-          {/* Scroll Right Button */}
-          {canScrollRight && (
-            <div className="absolute right-0 top-0 bottom-0 z-10 flex items-center pl-2 bg-gradient-to-l from-slate-950 via-slate-950/90 to-transparent pr-1">
+        {/* Scrollable Tabs Wrapper */}
+        <div
+          ref={scrollContainerRef}
+          onScroll={checkScroll}
+          className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-2 w-full px-1"
+        >
+          {visibleTabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+
+            return (
               <button
-                onClick={() => handleScroll('right')}
-                className="p-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-amber-400 border border-amber-500/30 shadow-lg transition transform hover:scale-105 active:scale-95 cursor-pointer"
-                title="Geser Kanan"
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition cursor-pointer shrink-0 border min-h-[40px] ${
+                  isActive
+                    ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md shadow-amber-500/20 font-black'
+                    : 'bg-slate-950/60 text-slate-400 hover:text-slate-100 border-slate-800/80 hover:bg-slate-800/60'
+                }`}
               >
-                <ChevronRight className="w-4 h-4" />
+                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-slate-950' : 'text-amber-400/90'}`} />
+                <span>{tab.label}</span>
+
+                {typeof tab.badge === 'number' && (
+                  <span
+                    className={`ml-0.5 px-2 py-0.5 rounded-full text-[10px] font-black font-mono ${
+                      isActive
+                        ? 'bg-slate-950 text-amber-400'
+                        : 'bg-slate-800 text-slate-300 border border-slate-700'
+                    }`}
+                  >
+                    {tab.badge}
+                  </span>
+                )}
               </button>
-            </div>
-          )}
+            );
+          })}
         </div>
 
-        {/* Role indicator badge on tab right */}
-        <div className="hidden lg:flex items-center pl-3 shrink-0">
-          {isAdminMode ? (
-            <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Sisi Admin Pemda</span>
-            </span>
-          ) : (
-            <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-slate-900 text-slate-400 border border-slate-800">
-              Sisi Pemohon / User
-            </span>
-          )}
-        </div>
+        {/* Right Scroll Gradient Arrow */}
+        {canScrollRight && (
+          <button
+            onClick={() => scroll('right')}
+            className="absolute right-0 z-10 h-full px-1.5 bg-gradient-to-l from-slate-900 via-slate-900/90 to-transparent text-amber-400 hover:text-amber-300 transition flex items-center justify-center cursor-pointer"
+            aria-label="Scroll Kanan"
+          >
+            <ChevronRight className="w-5 h-5 bg-slate-950/80 rounded-full border border-slate-700 shadow-md p-0.5" />
+          </button>
+        )}
       </div>
     </div>
   );

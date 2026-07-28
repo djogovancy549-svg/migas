@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { Pangkalan } from '../types';
-import { Search, Filter, Download, Plus, FileText, Award, Eye, Edit, Trash2, MapPin, Building, ChevronLeft, ChevronRight, Upload, Paperclip, Store, FolderCheck, FolderX, FolderOpen } from 'lucide-react';
+import { Pangkalan, RekomendasiPerizinan } from '../types';
+import { Search, Filter, Download, Plus, FileText, Award, Eye, Edit, Trash2, MapPin, Building, ChevronLeft, ChevronRight, Upload, Paperclip, Store, FolderCheck, FolderX, FolderOpen, CheckCircle2 } from 'lucide-react';
 
 interface PangkalanTableViewProps {
   pangkalanList: Pangkalan[];
   uploadedDocsCountMap?: Record<string, number>;
+  rekomendasiMap?: Record<string, RekomendasiPerizinan>;
   isAdminMode?: boolean;
   onSelectPangkalanForLetter: (pangkalan: Pangkalan, letterType: 'permohonan' | 'pernyataan') => void;
   onEditPangkalan: (pangkalan: Pangkalan) => void;
@@ -12,11 +13,13 @@ interface PangkalanTableViewProps {
   onAddNewPangkalan: () => void;
   onOpenDetail: (pangkalan: Pangkalan) => void;
   onOpenUploadModal: (pangkalan: Pangkalan) => void;
+  onOpenRekomendasiModal: (pangkalan: Pangkalan) => void;
 }
 
 export const PangkalanTableView: React.FC<PangkalanTableViewProps> = ({
   pangkalanList,
   uploadedDocsCountMap = {},
+  rekomendasiMap = {},
   isAdminMode = false,
   onSelectPangkalanForLetter,
   onEditPangkalan,
@@ -24,6 +27,7 @@ export const PangkalanTableView: React.FC<PangkalanTableViewProps> = ({
   onAddNewPangkalan,
   onOpenDetail,
   onOpenUploadModal,
+  onOpenRekomendasiModal,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedKecamatan, setSelectedKecamatan] = useState<string>('ALL');
@@ -77,7 +81,7 @@ export const PangkalanTableView: React.FC<PangkalanTableViewProps> = ({
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `Daftar_Pangkalan_PT_PNE_Nagekeo_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `Daftar_Pangkalan_SIPERMATA_Nagekeo_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -155,7 +159,7 @@ export const PangkalanTableView: React.FC<PangkalanTableViewProps> = ({
           {selectedKecamatan !== 'ALL' && <span> di Kecamatan <strong className="text-amber-400">{selectedKecamatan}</strong></span>}
         </p>
         <p className="hidden sm:block text-slate-500 font-mono">
-          Pemda Kab. Nagekeo • Bagian Perekonomian & SDA
+          SIPERMATA Pemda Kab. Nagekeo
         </p>
       </div>
 
@@ -169,7 +173,7 @@ export const PangkalanTableView: React.FC<PangkalanTableViewProps> = ({
             <div className="space-y-1">
               <h3 className="text-base font-bold text-white">Belum Ada Data Pangkalan</h3>
               <p className="text-xs text-slate-400 max-w-md mx-auto">
-                Data pangkalan telah dikosongkan. Klik tombol di bawah untuk menambahkan data pangkalan baru atau login Google di banner atas untuk sync dari Google Sheets.
+                Data pangkalan telah dikosongkan. Klik tombol di bawah untuk menambahkan data pangkalan baru.
               </p>
             </div>
             <button
@@ -191,21 +195,23 @@ export const PangkalanTableView: React.FC<PangkalanTableViewProps> = ({
                     <th className="py-3.5 px-3.5">Nama Pangkalan / Pemilik</th>
                     <th className="py-3.5 px-3.5">Alamat & Kelurahan</th>
                     <th className="py-3.5 px-3.5">Kecamatan</th>
-                    <th className="py-3.5 px-3.5 text-center">Kuota Harian</th>
-                    <th className="py-3.5 px-3.5 text-center">Aksi Dokumen</th>
+                    <th className="py-3.5 px-3.5 text-center">Aksi Perizinan & Dokumen</th>
                     <th className="py-3.5 px-3.5 text-right">Opsi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/80 text-xs text-slate-300">
                   {paginatedList.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="text-center py-12 text-slate-500">
+                      <td colSpan={7} className="text-center py-12 text-slate-500">
                         Tidak ada data pangkalan yang sesuai dengan kata kunci pencarian.
                       </td>
                     </tr>
                   ) : (
                     paginatedList.map((p, idx) => {
                       const globalNo = (currentPage - 1) * itemsPerPage + idx + 1;
+                      const rek = rekomendasiMap[p.id];
+                      const isSigned = rek?.status === 'Disetujui & Diterbitkan';
+
                       return (
                         <tr key={p.id} className="hover:bg-slate-800/50 transition group">
                           <td className="py-3.5 px-3.5 text-center font-semibold text-slate-500">
@@ -235,64 +241,43 @@ export const PangkalanTableView: React.FC<PangkalanTableViewProps> = ({
                               {p.kecamatan}
                             </span>
                           </td>
-                          <td className="py-3.5 px-3.5 text-center font-semibold text-slate-200">
-                            {p.kuotaHarianLiter || 200} Liter
-                          </td>
                           <td className="py-3.5 px-3.5 text-center">
-                            <div className="flex items-center justify-center gap-1.5 flex-wrap sm:flex-nowrap">
-                              {isAdminMode ? (
-                                <button
-                                  onClick={() => onOpenUploadModal(p)}
-                                  className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition cursor-pointer border min-h-[36px] ${
-                                    uploadedDocsCountMap[p.id]
-                                      ? 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border-emerald-500/40 shadow-sm'
-                                      : 'bg-slate-800/80 hover:bg-slate-800 text-slate-400 border-slate-700/60'
-                                  }`}
-                                  title="Buka Folder Berkas Pangkalan (Modul Admin)"
-                                >
-                                  {uploadedDocsCountMap[p.id] ? (
-                                    <>
-                                      <FolderCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                                      <span>Folder: Ada File ({uploadedDocsCountMap[p.id]})</span>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <FolderX className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                                      <span>Folder Kosong</span>
-                                    </>
-                                  )}
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => onOpenUploadModal(p)}
-                                  className="inline-flex items-center gap-1.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40 text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition cursor-pointer shadow-sm min-h-[36px]"
-                                  title="Upload / Kelola Berkas Persyaratan"
-                                >
-                                  <Upload className="w-3.5 h-3.5 text-blue-400" />
-                                  <span>Upload Berkas</span>
-                                  {uploadedDocsCountMap[p.id] ? (
-                                    <span className="bg-blue-500 text-slate-950 font-mono text-[10px] font-bold px-1.5 py-0.2 rounded-full">
-                                      {uploadedDocsCountMap[p.id]}
-                                    </span>
-                                  ) : null}
-                                </button>
-                              )}
+                            <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                              {/* Rekomendasi Action Button */}
+                              <button
+                                onClick={() => onOpenRekomendasiModal(p)}
+                                className={`inline-flex items-center gap-1 text-[11px] font-bold px-3 py-1.5 rounded-lg transition cursor-pointer shadow-sm min-h-[36px] ${
+                                  isSigned
+                                    ? 'bg-emerald-500 text-slate-950 hover:bg-emerald-400 font-extrabold'
+                                    : 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold'
+                                }`}
+                                title="Proses / Lihat Rekomendasi Perizinan Pimpinan"
+                              >
+                                <Award className="w-3.5 h-3.5" />
+                                <span>{isSigned ? 'Rekomendasi (Terbit ✓)' : 'Rekomendasi'}</span>
+                              </button>
+
+                              {/* Upload Folder Button */}
+                              <button
+                                onClick={() => onOpenUploadModal(p)}
+                                className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition cursor-pointer border min-h-[36px] ${
+                                  uploadedDocsCountMap[p.id]
+                                    ? 'bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border-blue-500/40'
+                                    : 'bg-slate-800 hover:bg-slate-700 text-slate-400 border-slate-700'
+                                }`}
+                                title="Kelola Berkas Persyaratan"
+                              >
+                                <Upload className="w-3.5 h-3.5" />
+                                <span>Berkas ({uploadedDocsCountMap[p.id] || 0})</span>
+                              </button>
 
                               <button
                                 onClick={() => onSelectPangkalanForLetter(p, 'permohonan')}
-                                className="inline-flex items-center gap-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition cursor-pointer min-h-[36px]"
+                                className="inline-flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px] font-semibold px-2 py-1.5 rounded-lg transition cursor-pointer min-h-[36px]"
                                 title="Buat Surat Permohonan"
                               >
-                                <FileText className="w-3.5 h-3.5" />
+                                <FileText className="w-3.5 h-3.5 text-amber-400" />
                                 <span>Permohonan</span>
-                              </button>
-                              <button
-                                onClick={() => onSelectPangkalanForLetter(p, 'pernyataan')}
-                                className="inline-flex items-center gap-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition cursor-pointer min-h-[36px]"
-                                title="Buat Surat Pernyataan"
-                              >
-                                <Award className="w-3.5 h-3.5" />
-                                <span>Pernyataan</span>
                               </button>
                             </div>
                           </td>

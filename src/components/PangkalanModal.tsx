@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Pangkalan } from '../types';
+import { Pangkalan, AgenCompany } from '../types';
 import { X, Save, Building2, MapPin, Fuel, User, Phone, FileText } from 'lucide-react';
 
 interface PangkalanModalProps {
   isOpen: boolean;
   mode: 'add' | 'edit' | 'detail';
   pangkalan?: Pangkalan | null;
+  agenList?: AgenCompany[];
   onClose: () => void;
   onSave: (pangkalan: Pangkalan) => void;
   onSelectForLetter?: (pangkalan: Pangkalan, letterType: 'permohonan' | 'pernyataan') => void;
@@ -15,6 +16,7 @@ export const PangkalanModal: React.FC<PangkalanModalProps> = ({
   isOpen,
   mode,
   pangkalan,
+  agenList = [],
   onClose,
   onSave,
   onSelectForLetter,
@@ -39,6 +41,7 @@ export const PangkalanModal: React.FC<PangkalanModalProps> = ({
     pekerjaan: pangkalan?.pekerjaan || 'Wiraswasta',
     nomorHp: pangkalan?.nomorHp || '',
     namaUsaha: pangkalan?.namaUsaha || '',
+    namaAgen: pangkalan?.namaAgen || (agenList.length > 0 ? agenList[0].nama : 'PT. PUTRA NGADA ENERGI (NAGEKEO)'),
   });
 
   useEffect(() => {
@@ -249,6 +252,21 @@ export const PangkalanModal: React.FC<PangkalanModalProps> = ({
                   className="w-full p-2 border border-slate-800 rounded-xl bg-slate-950 text-white"
                   placeholder="08..."
                 />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-300 mb-1">Agen Penyalur Resmi:</label>
+                <select
+                  value={formData.namaAgen || (agenList[0]?.nama || '')}
+                  onChange={(e) => setFormData({ ...formData, namaAgen: e.target.value })}
+                  className="w-full p-2 border border-slate-800 rounded-xl font-semibold bg-slate-950 text-white"
+                >
+                  {agenList.map((agen) => (
+                    <option key={agen.id} value={agen.nama}>
+                      {agen.nama}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 

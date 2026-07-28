@@ -1,3 +1,17 @@
+export interface AgenCompany {
+  id: string;
+  nama: string;
+  singkatan?: string;
+  alamat?: string;
+  kabupaten?: string;
+  provinsi?: string;
+  telepon?: string;
+  penanggungJawab?: string;
+  npwp?: string;
+}
+
+export type UserRole = 'customer' | 'admin' | 'agen';
+
 export interface Pangkalan {
   id: string; // e.g. "001/PT PNE NGK"
   no?: number;
@@ -19,6 +33,8 @@ export interface Pangkalan {
   nomorHp?: string;
   namaUsaha?: string;
   rekomendasiTahunSebelumnya?: string;
+  agenId?: string;
+  namaAgen?: string;
 }
 
 export type JenisPermohonan = 'Perpanjangan' | 'Baru';
@@ -61,6 +77,21 @@ export interface MasterRequirementItem {
   addedByAdmin?: boolean;
 }
 
+export interface RekomendasiPerizinan {
+  id: string;
+  pangkalanId: string;
+  nomorRekomendasi: string;
+  tanggalRekomendasi: string;
+  berlakuSampai: string;
+  status: 'Draft' | 'Menunggu Tanda Tangan Pimpinan' | 'Disetujui & Diterbitkan' | 'Ditolak';
+  pimpinanNama: string;
+  pimpinanNip: string;
+  pimpinanJabatan: string;
+  signedAt?: string;
+  qrCodeDataUrl?: string;
+  catatanPimpinan?: string;
+}
+
 export interface SuratPermohonanData {
   nomorSurat: string;
   lampiran: string;
@@ -96,4 +127,3 @@ export interface SuratPernyataanData {
   kotaSurat: string;
   includeMeteraiPlaceholder: boolean;
 }
-

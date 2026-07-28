@@ -1,15 +1,21 @@
 import React, { useState } from 'react';
-import { Lock, ShieldCheck, Key, Eye, EyeOff, AlertCircle, X } from 'lucide-react';
+import { Lock, ShieldCheck, Key, Eye, EyeOff, AlertCircle, X, Building2 } from 'lucide-react';
 
 interface AdminPinModalProps {
   isOpen: boolean;
+  targetRole?: 'admin' | 'agen';
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccessAdmin?: () => void;
+  onSuccessAgen?: () => void;
+  onSuccess?: () => void;
 }
 
 export const AdminPinModal: React.FC<AdminPinModalProps> = ({
   isOpen,
+  targetRole = 'admin',
   onClose,
+  onSuccessAdmin,
+  onSuccessAgen,
   onSuccess,
 }) => {
   const [pin, setPin] = useState('');
@@ -20,15 +26,32 @@ export const AdminPinModal: React.FC<AdminPinModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (pin.trim() === 'migas2026') {
-      setError(false);
-      setPin('');
-      onSuccess();
-      onClose();
+    const cleanPin = pin.trim();
+
+    if (targetRole === 'agen') {
+      if (cleanPin === 'agen2026') {
+        setError(false);
+        setPin('');
+        if (onSuccessAgen) onSuccessAgen();
+        if (onSuccess) onSuccess();
+        onClose();
+      } else {
+        setError(true);
+      }
     } else {
-      setError(true);
+      if (cleanPin === 'migas2026') {
+        setError(false);
+        setPin('');
+        if (onSuccessAdmin) onSuccessAdmin();
+        if (onSuccess) onSuccess();
+        onClose();
+      } else {
+        setError(true);
+      }
     }
   };
+
+  const isAdmin = targetRole === 'admin';
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
@@ -36,12 +59,22 @@ export const AdminPinModal: React.FC<AdminPinModalProps> = ({
         {/* Header */}
         <div className="bg-slate-950 p-5 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center">
-              <ShieldCheck className="w-5 h-5" />
+            <div
+              className={`w-10 h-10 rounded-xl flex items-center justify-center border ${
+                isAdmin
+                  ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                  : 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+              }`}
+            >
+              {isAdmin ? <ShieldCheck className="w-5 h-5" /> : <Building2 className="w-5 h-5" />}
             </div>
             <div>
-              <h3 className="text-base font-bold text-white">Mode Admin Terproteksi</h3>
-              <p className="text-xs text-slate-400">Perekonomian & SDA Setda Nagekeo</p>
+              <h3 className="text-base font-bold text-white">
+                {isAdmin ? 'Mode Admin Terproteksi' : 'Mode Agen Penyalur Terproteksi'}
+              </h3>
+              <p className="text-xs text-slate-400">
+                {isAdmin ? 'Perekonomian & SDA Setda Nagekeo' : 'Akses Khusus Agen Penyalur Minyak Tanah'}
+              </p>
             </div>
           </div>
           <button
@@ -54,19 +87,29 @@ export const AdminPinModal: React.FC<AdminPinModalProps> = ({
 
         {/* Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div className="p-3.5 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-300 flex items-start gap-2.5">
-            <Lock className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+          <div
+            className={`p-3.5 border rounded-xl text-xs flex items-start gap-2.5 ${
+              isAdmin
+                ? 'bg-amber-500/10 border-amber-500/20 text-amber-300'
+                : 'bg-blue-500/10 border-blue-500/20 text-blue-300'
+            }`}
+          >
+            <Lock className={`w-4 h-4 shrink-0 mt-0.5 ${isAdmin ? 'text-amber-400' : 'text-blue-400'}`} />
             <div>
-              <p className="font-semibold text-amber-200">Proteksi PIN Keamanan Admin</p>
-              <p className="text-amber-400/90 mt-0.5">
-                Masukkan PIN khusus Administrator untuk menambah pangkalan, mengatur syarat dokumen master, serta memverifikasi berkas fisik.
+              <p className={`font-semibold ${isAdmin ? 'text-amber-200' : 'text-blue-200'}`}>
+                {isAdmin ? 'Autentikasi PIN Administrator' : 'Autentikasi PIN Agen Penyalur'}
+              </p>
+              <p className="mt-0.5 opacity-90 leading-relaxed">
+                {isAdmin
+                  ? 'Masukkan PIN khusus Administrator Pemda Nagekeo untuk mengelola data pangkalan, penerbitan rekomendasi, dan pengaturan sistem.'
+                  : 'Masukkan PIN khusus Agen Penyalur untuk mengakses portal monitoring data pangkalan yang sudah memiliki izin resmi.'}
               </p>
             </div>
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-              Kode PIN Admin:
+              {isAdmin ? 'Kode PIN Admin Pemda:' : 'Kode PIN Agen Penyalur:'}
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
@@ -79,13 +122,15 @@ export const AdminPinModal: React.FC<AdminPinModalProps> = ({
                   setPin(e.target.value);
                   if (error) setError(false);
                 }}
-                placeholder="Masukkan PIN Admin..."
+                placeholder={isAdmin ? 'Masukkan PIN Admin...' : 'Masukkan PIN Agen...'}
                 autoFocus
                 required
                 className={`w-full pl-9 pr-10 py-2.5 bg-slate-950 border rounded-xl text-sm font-mono tracking-wider text-white focus:outline-none focus:ring-2 ${
                   error
                     ? 'border-red-500 focus:ring-red-500'
-                    : 'border-slate-800 focus:ring-amber-500'
+                    : isAdmin
+                    ? 'border-slate-800 focus:ring-amber-500'
+                    : 'border-slate-800 focus:ring-blue-500'
                 }`}
               />
               <button
@@ -99,7 +144,7 @@ export const AdminPinModal: React.FC<AdminPinModalProps> = ({
             {error && (
               <p className="text-xs text-red-400 flex items-center gap-1 mt-1.5 font-medium">
                 <AlertCircle className="w-3.5 h-3.5" />
-                PIN salah! Silakan coba lagi.
+                Kode PIN tidak sesuai! Silakan periksa dan coba kembali.
               </p>
             )}
           </div>
@@ -114,9 +159,13 @@ export const AdminPinModal: React.FC<AdminPinModalProps> = ({
             </button>
             <button
               type="submit"
-              className="px-5 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-950 font-bold rounded-xl text-xs shadow-md shadow-amber-500/10 transition cursor-pointer"
+              className={`px-5 py-2 text-slate-950 font-bold rounded-xl text-xs shadow-md transition cursor-pointer ${
+                isAdmin
+                  ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-amber-500/10'
+                  : 'bg-gradient-to-r from-blue-500 to-teal-500 hover:from-blue-600 hover:to-teal-600 shadow-blue-500/10'
+              }`}
             >
-              Verifikasi & Masuk
+              Verifikasi PIN & Masuk
             </button>
           </div>
         </form>

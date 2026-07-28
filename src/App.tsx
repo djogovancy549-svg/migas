@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Pangkalan, PersyaratanStatus, MasterRequirementItem, UploadedDocument } from './types';
-import { INITIAL_PANGKALAN_LIST, INITIAL_CHECKLIST_STATUS } from './data/pangkalanData';
+import { Pangkalan, PersyaratanStatus, MasterRequirementItem, UploadedDocument, RekomendasiPerizinan, AgenCompany } from './types';
+import { INITIAL_PANGKALAN_LIST, INITIAL_CHECKLIST_STATUS, INITIAL_AGEN_LIST, PEMDA_INFO } from './data/pangkalanData';
 import { INITIAL_MASTER_REQUIREMENTS } from './data/masterRequirements';
 import { safeLocalStorage } from './lib/storage';
 import { initAuthListener } from './lib/googleAuth';
@@ -8,17 +8,23 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { Header } from './components/Header';
 import { TabNavigation, TabType } from './components/TabNavigation';
 import { GoogleSyncBar } from './components/GoogleSyncBar';
+import { LauncherScreen } from './components/LauncherScreen';
 import { DashboardView } from './components/DashboardView';
 import { PangkalanTableView } from './components/PangkalanTableView';
 import { SuratPermohonanView } from './components/SuratPermohonanView';
 import { SuratPernyataanView } from './components/SuratPernyataanView';
 import { PersyaratanChecklistView } from './components/PersyaratanChecklistView';
 import { AdminSettingsView } from './components/AdminSettingsView';
+import { AgenPortalView } from './components/AgenPortalView';
 import { PangkalanModal } from './components/PangkalanModal';
 import { AdminPinModal } from './components/AdminPinModal';
 import { UploadPersyaratanModal } from './components/UploadPersyaratanModal';
+import { RekomendasiModal } from './components/RekomendasiModal';
 
 export default function App() {
+  // Launcher screen toggle state
+  const [isLauncherActive, setIsLauncherActive] = useState<boolean>(true);
+
   // Authorized Admin Emails list state
   const [authorizedAdminEmails, setAuthorizedAdminEmails] = useState<string[]>(() => {
     const saved = safeLocalStorage.getItem('pne_nagekeo_admin_emails');
@@ -31,6 +37,20 @@ export default function App() {
       }
     }
     return ['djogovancy549@gmail.com', 'admin.perekonomian@nagekeokab.go.id'];
+  });
+
+  // Dynamic Agen Companies List state (Editable by Admin)
+  const [agenList, setAgenList] = useState<AgenCompany[]>(() => {
+    const saved = safeLocalStorage.getItem('sipermata_agen_list');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {
+        console.error('Failed to parse saved agen list', e);
+      }
+    }
+    return INITIAL_AGEN_LIST;
   });
 
   // Current Google User and Access Token state
@@ -92,15 +112,70 @@ export default function App() {
     return [];
   });
 
+  // Leader Pimpinan Info & PIN state
+  const [pimpinanInfo, setPimpinanInfo] = useState<{
+    pin: string;
+    nama: string;
+    nip: string;
+    jabatan: string;
+  }>(() => {
+    const saved = safeLocalStorage.getItem('sipermata_pimpinan_info');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.pin) return parsed;
+      } catch (e) {
+        console.error('Failed to parse saved pimpinan info', e);
+      }
+    }
+    return {
+      pin: '8888',
+      nama: 'MARIA SERVINA, S.E., M.Si.',
+      nip: '19780512 200501 2 008',
+      jabatan: 'Kepala Bagian Perekonomian & SDA Setda Kab. Nagekeo',
+    };
+  });
+
+  // Rekomendasi perizinan data state by pangkalan ID
+  const [rekomendasiMap, setRekomendasiMap] = useState<Record<string, RekomendasiPerizinan>>(() => {
+    const saved = safeLocalStorage.getItem('sipermata_rekomendasi_map');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') return parsed;
+      } catch (e) {
+        console.error('Failed to parse saved rekomendasi map', e);
+      }
+    }
+    return {};
+  });
+
   // Admin Mode state (protected by PIN migas2026 OR Google Auth Email match)
   const [isAdminMode, setIsAdminMode] = useState<boolean>(() => {
     return safeLocalStorage.getItem('pne_nagekeo_is_admin') === 'true';
   });
-  const [isAdminPinModalOpen, setIsAdminPinModalOpen] = useState<boolean>(false);
+
+  // Agen Mode state (protected by PIN agen2026)
+  const [isAgenMode, setIsAgenMode] = useState<boolean>(() => {
+    return safeLocalStorage.getItem('sipermata_is_agen') === 'true';
+  });
+
+  // Combined PIN Auth Modal State
+  const [authModalState, setAuthModalState] = useState<{
+    isOpen: boolean;
+    targetRole: 'admin' | 'agen';
+  }>({
+    isOpen: false,
+    targetRole: 'admin',
+  });
 
   // File Upload Modal State
   const [isUploadModalOpen, setIsUploadModalOpen] = useState<boolean>(false);
   const [uploadTargetPangkalan, setUploadTargetPangkalan] = useState<Pangkalan | null>(null);
+
+  // Rekomendasi Modal State
+  const [isRekomendasiModalOpen, setIsRekomendasiModalOpen] = useState<boolean>(false);
+  const [rekomendasiTargetPangkalan, setRekomendasiTargetPangkalan] = useState<Pangkalan | null>(null);
 
   // Google Auth Listener to auto-grant Admin mode if user's email matches authorizedAdminEmails
   useEffect(() => {
@@ -140,8 +215,24 @@ export default function App() {
   }, [uploadedDocs]);
 
   useEffect(() => {
+    safeLocalStorage.setItem('sipermata_pimpinan_info', JSON.stringify(pimpinanInfo));
+  }, [pimpinanInfo]);
+
+  useEffect(() => {
+    safeLocalStorage.setItem('sipermata_rekomendasi_map', JSON.stringify(rekomendasiMap));
+  }, [rekomendasiMap]);
+
+  useEffect(() => {
     safeLocalStorage.setItem('pne_nagekeo_is_admin', isAdminMode ? 'true' : 'false');
   }, [isAdminMode]);
+
+  useEffect(() => {
+    safeLocalStorage.setItem('sipermata_is_agen', isAgenMode ? 'true' : 'false');
+  }, [isAgenMode]);
+
+  useEffect(() => {
+    safeLocalStorage.setItem('sipermata_agen_list', JSON.stringify(agenList));
+  }, [agenList]);
 
   useEffect(() => {
     safeLocalStorage.setItem('pne_nagekeo_admin_emails', JSON.stringify(authorizedAdminEmails));
@@ -150,12 +241,12 @@ export default function App() {
   // Tab State
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
 
-  // Guard: If non-admin tries to visit admin-only tab, redirect to dashboard
+  // Guard: If non-admin tries to visit admin-only tab, redirect to dashboard or portal-agen
   useEffect(() => {
     if (!isAdminMode && (activeTab === 'pangkalan' || activeTab === 'admin-settings')) {
-      setActiveTab('dashboard');
+      setActiveTab(isAgenMode ? 'portal-agen' : 'dashboard');
     }
-  }, [isAdminMode, activeTab]);
+  }, [isAdminMode, isAgenMode, activeTab]);
 
   // Selected Pangkalan for Document Generation
   const [selectedPangkalanForLetter, setSelectedPangkalanForLetter] = useState<Pangkalan | null>(null);
@@ -174,6 +265,14 @@ export default function App() {
   // Unique Kecamatan Count
   const totalKecamatan = new Set(pangkalanList.map((p) => p.kecamatan)).size;
 
+  // Count of pangkalan with "Disetujui & Diterbitkan" status
+  const licensedPangkalanCount = useMemo(() => {
+    return pangkalanList.filter((p) => {
+      const rek = rekomendasiMap[p.id];
+      return rek && rek.status === 'Disetujui & Diterbitkan';
+    }).length;
+  }, [pangkalanList, rekomendasiMap]);
+
   // Uploaded docs count map for each pangkalan ID
   const uploadedDocsCountMap = useMemo(() => {
     const map: Record<string, number> = {};
@@ -189,9 +288,11 @@ export default function App() {
       setPangkalanList([]);
       setChecklistData({});
       setUploadedDocs([]);
+      setRekomendasiMap({});
       safeLocalStorage.removeItem('pne_nagekeo_pangkalan_data');
       safeLocalStorage.removeItem('pne_nagekeo_checklist_data');
       safeLocalStorage.removeItem('pne_nagekeo_uploaded_docs');
+      safeLocalStorage.removeItem('sipermata_rekomendasi_map');
     }
   };
 
@@ -236,6 +337,45 @@ export default function App() {
   const handleOpenUploadModal = (pangkalan: Pangkalan) => {
     setUploadTargetPangkalan(pangkalan);
     setIsUploadModalOpen(true);
+  };
+
+  // Rekomendasi Modal Handlers
+  const handleOpenRekomendasiModal = (pangkalan: Pangkalan) => {
+    setRekomendasiTargetPangkalan(pangkalan);
+    setIsRekomendasiModalOpen(true);
+  };
+
+  const handleApproveAndSignRekomendasi = (pangkalanId: string, customNomorRek?: string) => {
+    const today = new Date().toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    });
+
+    const nextYear = new Date();
+    nextYear.setFullYear(nextYear.getFullYear() + 1);
+    const berlakuSampaiStr = nextYear.toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    });
+
+    const newRekomendasi: RekomendasiPerizinan = {
+      id: 'rek_' + Date.now(),
+      pangkalanId,
+      nomorRekomendasi: customNomorRek || `500/EKON/REK-MIGAS/${pangkalanId}/2026`,
+      status: 'Disetujui & Diterbitkan',
+      pimpinanNama: pimpinanInfo.nama,
+      pimpinanNip: pimpinanInfo.nip,
+      pimpinanJabatan: pimpinanInfo.jabatan,
+      tanggalRekomendasi: today,
+      berlakuSampai: berlakuSampaiStr,
+    };
+
+    setRekomendasiMap((prev) => ({
+      ...prev,
+      [pangkalanId]: newRekomendasi,
+    }));
   };
 
   const handleUploadFile = (pangkalanId: string, docKey: string, docName: string, file: File) => {
@@ -313,6 +453,68 @@ export default function App() {
     setMasterRequirements((prev) => prev.filter((item) => item.key !== key));
   };
 
+  // Render Launcher Screen if active
+  if (isLauncherActive) {
+    return (
+      <>
+        <LauncherScreen
+          totalPangkalan={pangkalanList.length}
+          isAdminMode={isAdminMode}
+          isAgenMode={isAgenMode}
+          currentUserEmail={currentUserEmail}
+          onEnterAsCustomer={() => {
+            setIsLauncherActive(false);
+            setActiveTab('dashboard');
+          }}
+          onEnterAsAgen={() => {
+            if (isAgenMode) {
+              setIsLauncherActive(false);
+              setActiveTab('portal-agen');
+            } else {
+              setAuthModalState({ isOpen: true, targetRole: 'agen' });
+            }
+          }}
+          onEnterAsAdmin={() => {
+            if (isAdminMode) {
+              setIsLauncherActive(false);
+              setActiveTab('dashboard');
+            } else {
+              setAuthModalState({ isOpen: true, targetRole: 'admin' });
+            }
+          }}
+          onRequestAdminAuth={() => setAuthModalState({ isOpen: true, targetRole: 'admin' })}
+          onRequestAgenAuth={() => setAuthModalState({ isOpen: true, targetRole: 'agen' })}
+        />
+
+        {/* Unified Admin/Agen PIN Modal */}
+        <AdminPinModal
+          isOpen={authModalState.isOpen}
+          targetRole={authModalState.targetRole}
+          onClose={() => setAuthModalState({ ...authModalState, isOpen: false })}
+          onSuccess={() => {
+            if (authModalState.targetRole === 'admin') {
+              setIsAdminMode(true);
+              setActiveTab('dashboard');
+            } else {
+              setIsAgenMode(true);
+              setActiveTab('portal-agen');
+            }
+            setAuthModalState({ ...authModalState, isOpen: false });
+            setIsLauncherActive(false);
+          }}
+        />
+      </>
+    );
+  }
+
+  // Active target for Rekomendasi checking requirements completeness
+  const targetChecklist = rekomendasiTargetPangkalan ? checklistData[rekomendasiTargetPangkalan.id] : null;
+  const targetActiveReqs = masterRequirements.filter(
+    (item) => item.requiredFor === 'Semua' || item.requiredFor === (targetChecklist?.jenis || 'Perpanjangan')
+  );
+  const targetCompletedCount = targetActiveReqs.filter((item) => !!targetChecklist?.[item.key]).length;
+  const isTargetRequirementsComplete = targetActiveReqs.length > 0 && targetCompletedCount === targetActiveReqs.length;
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col selection:bg-amber-500 selection:text-slate-950">
       {/* App Header */}
@@ -320,9 +522,13 @@ export default function App() {
         totalPangkalan={pangkalanList.length}
         totalKecamatan={totalKecamatan}
         isAdminMode={isAdminMode}
-        onRequestAdminAuth={() => setIsAdminPinModalOpen(true)}
+        isAgenMode={isAgenMode}
+        onRequestAdminAuth={() => setAuthModalState({ isOpen: true, targetRole: 'admin' })}
+        onRequestAgenAuth={() => setAuthModalState({ isOpen: true, targetRole: 'agen' })}
         onExitAdminMode={() => setIsAdminMode(false)}
+        onExitAgenMode={() => setIsAgenMode(false)}
         onQuickPrintSummary={handleQuickPrintSummary}
+        onGoToLauncher={() => setIsLauncherActive(true)}
       />
 
       {/* Tab Navigation */}
@@ -331,6 +537,8 @@ export default function App() {
         setActiveTab={setActiveTab}
         pangkalanCount={pangkalanList.length}
         isAdminMode={isAdminMode}
+        isAgenMode={isAgenMode}
+        licensedCount={licensedPangkalanCount}
       />
 
       {/* Main Content Body */}
@@ -353,10 +561,22 @@ export default function App() {
             />
           )}
 
+          {activeTab === 'portal-agen' && (
+            <AgenPortalView
+              pangkalanList={pangkalanList}
+              rekomendasiMap={rekomendasiMap}
+              agenList={agenList}
+              onSelectPangkalanForLetter={handleSelectPangkalanForLetter}
+              onOpenRekomendasiModal={handleOpenRekomendasiModal}
+              onOpenDetail={(p) => setModalState({ isOpen: true, mode: 'detail', pangkalan: p })}
+            />
+          )}
+
           {activeTab === 'pangkalan' && isAdminMode && (
             <PangkalanTableView
               pangkalanList={pangkalanList}
               uploadedDocsCountMap={uploadedDocsCountMap}
+              rekomendasiMap={rekomendasiMap}
               isAdminMode={isAdminMode}
               onSelectPangkalanForLetter={handleSelectPangkalanForLetter}
               onEditPangkalan={(p) => setModalState({ isOpen: true, mode: 'edit', pangkalan: p })}
@@ -364,6 +584,7 @@ export default function App() {
               onAddNewPangkalan={() => setModalState({ isOpen: true, mode: 'add', pangkalan: null })}
               onOpenDetail={(p) => setModalState({ isOpen: true, mode: 'detail', pangkalan: p })}
               onOpenUploadModal={handleOpenUploadModal}
+              onOpenRekomendasiModal={handleOpenRekomendasiModal}
             />
           )}
 
@@ -389,10 +610,12 @@ export default function App() {
               checklistData={checklistData}
               masterRequirements={masterRequirements}
               uploadedDocs={uploadedDocs}
+              rekomendasiMap={rekomendasiMap}
               isAdminMode={isAdminMode}
-              onRequestAdminAuth={() => setIsAdminPinModalOpen(true)}
+              onRequestAdminAuth={() => setAuthModalState({ isOpen: true, targetRole: 'admin' })}
               onUpdateChecklist={handleUpdateChecklist}
               onOpenUploadModal={handleOpenUploadModal}
+              onOpenRekomendasiModal={handleOpenRekomendasiModal}
               onAddMasterRequirement={handleAddMasterRequirement}
               onDeleteMasterRequirement={handleDeleteMasterRequirement}
             />
@@ -406,8 +629,15 @@ export default function App() {
               authorizedAdminEmails={authorizedAdminEmails}
               currentUserEmail={currentUserEmail}
               googleAccessToken={googleAccessToken}
+              pimpinanPin={pimpinanInfo.pin}
+              pimpinanNama={pimpinanInfo.nama}
+              pimpinanNip={pimpinanInfo.nip}
+              pimpinanJabatan={pimpinanInfo.jabatan}
+              agenList={agenList}
               onUpdateAuthorizedEmails={(updated) => setAuthorizedAdminEmails(updated)}
-              onRequestAdminAuth={() => setIsAdminPinModalOpen(true)}
+              onUpdatePimpinanInfo={(updated) => setPimpinanInfo(updated)}
+              onUpdateAgenList={(updated) => setAgenList(updated)}
+              onRequestAdminAuth={() => setAuthModalState({ isOpen: true, targetRole: 'admin' })}
               onExitAdminMode={() => setIsAdminMode(false)}
               onClearData={handleClearDummyData}
             />
@@ -418,11 +648,11 @@ export default function App() {
       {/* Footer */}
       <footer className="bg-slate-900 text-slate-400 py-6 border-t border-slate-800 text-center text-xs print:hidden">
         <div className="max-w-7xl mx-auto px-4 space-y-1">
-          <p className="font-bold text-slate-300">
-            Sistem Informasi & Rekomendasi Pangkalan Minyak Tanah Subsidi Kabupaten Nagekeo
+          <p className="font-black text-amber-400 tracking-wide">
+            {PEMDA_INFO.sistemName} - {PEMDA_INFO.sistemFullName}
           </p>
-          <p className="text-slate-500">
-            Bagian Perekonomian dan SDA Setda Kabupaten Nagekeo, NTT • Agen PT. Putra Ngada Energi
+          <p className="text-slate-400">
+            {PEMDA_INFO.instansi} • {PEMDA_INFO.nama}
           </p>
         </div>
       </footer>
@@ -432,6 +662,7 @@ export default function App() {
         isOpen={modalState.isOpen}
         mode={modalState.mode}
         pangkalan={modalState.pangkalan}
+        agenList={agenList}
         onClose={() => setModalState({ ...modalState, isOpen: false })}
         onSave={handleSavePangkalan}
         onSelectForLetter={handleSelectPangkalanForLetter}
@@ -451,16 +682,43 @@ export default function App() {
         onUploadFile={handleUploadFile}
         onDeleteFile={handleDeleteFile}
         onUpdateStatus={handleUpdateDocStatus}
-        onRequestAdminAuth={() => setIsAdminPinModalOpen(true)}
+        onRequestAdminAuth={() => setAuthModalState({ isOpen: true, targetRole: 'admin' })}
       />
 
-      {/* Admin PIN Authentication Modal */}
+      {/* Rekomendasi Modal */}
+      <RekomendasiModal
+        isOpen={isRekomendasiModalOpen}
+        pangkalan={rekomendasiTargetPangkalan}
+        isRequirementsComplete={isTargetRequirementsComplete}
+        existingRekomendasi={rekomendasiTargetPangkalan ? rekomendasiMap[rekomendasiTargetPangkalan.id] || null : null}
+        pimpinanPin={pimpinanInfo.pin}
+        pimpinanNama={pimpinanInfo.nama}
+        pimpinanNip={pimpinanInfo.nip}
+        pimpinanJabatan={pimpinanInfo.jabatan}
+        isAdminMode={isAdminMode}
+        onClose={() => {
+          setIsRekomendasiModalOpen(false);
+          setRekomendasiTargetPangkalan(null);
+        }}
+        onApproveAndSign={handleApproveAndSignRekomendasi}
+        onRequestAdminAuth={() => setAuthModalState({ isOpen: true, targetRole: 'admin' })}
+      />
+
+      {/* Unified Admin/Agen PIN Modal */}
       <AdminPinModal
-        isOpen={isAdminPinModalOpen}
-        onClose={() => setIsAdminPinModalOpen(false)}
+        isOpen={authModalState.isOpen}
+        targetRole={authModalState.targetRole}
+        onClose={() => setAuthModalState({ ...authModalState, isOpen: false })}
         onSuccess={() => {
-          setIsAdminMode(true);
-          setIsAdminPinModalOpen(false);
+          if (authModalState.targetRole === 'admin') {
+            setIsAdminMode(true);
+            setActiveTab('dashboard');
+          } else {
+            setIsAgenMode(true);
+            setActiveTab('portal-agen');
+          }
+          setAuthModalState({ ...authModalState, isOpen: false });
+          setIsLauncherActive(false);
         }}
       />
     </div>
