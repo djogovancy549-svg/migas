@@ -291,6 +291,7 @@ export default function App() {
           <PangkalanTableView
             pangkalanList={pangkalanList}
             uploadedDocsCountMap={uploadedDocsCountMap}
+            isAdminMode={isAdminMode}
             onSelectPangkalanForLetter={handleSelectPangkalanForLetter}
             onEditPangkalan={(p) => setModalState({ isOpen: true, mode: 'edit', pangkalan: p })}
             onDeletePangkalan={handleDeletePangkalan}

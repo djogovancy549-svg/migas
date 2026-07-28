@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { Pangkalan } from '../types';
-import { Search, Filter, Download, Plus, FileText, Award, Eye, Edit, Trash2, MapPin, Building, ChevronLeft, ChevronRight, Upload, Paperclip, Store } from 'lucide-react';
+import { Search, Filter, Download, Plus, FileText, Award, Eye, Edit, Trash2, MapPin, Building, ChevronLeft, ChevronRight, Upload, Paperclip, Store, FolderCheck, FolderX, FolderOpen } from 'lucide-react';
 
 interface PangkalanTableViewProps {
   pangkalanList: Pangkalan[];
   uploadedDocsCountMap?: Record<string, number>;
+  isAdminMode?: boolean;
   onSelectPangkalanForLetter: (pangkalan: Pangkalan, letterType: 'permohonan' | 'pernyataan') => void;
   onEditPangkalan: (pangkalan: Pangkalan) => void;
   onDeletePangkalan: (id: string) => void;
@@ -16,6 +17,7 @@ interface PangkalanTableViewProps {
 export const PangkalanTableView: React.FC<PangkalanTableViewProps> = ({
   pangkalanList,
   uploadedDocsCountMap = {},
+  isAdminMode = false,
   onSelectPangkalanForLetter,
   onEditPangkalan,
   onDeletePangkalan,
@@ -238,19 +240,43 @@ export const PangkalanTableView: React.FC<PangkalanTableViewProps> = ({
                           </td>
                           <td className="py-3.5 px-3.5 text-center">
                             <div className="flex items-center justify-center gap-1.5 flex-wrap sm:flex-nowrap">
-                              <button
-                                onClick={() => onOpenUploadModal(p)}
-                                className="inline-flex items-center gap-1.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40 text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition cursor-pointer shadow-sm min-h-[36px]"
-                                title="Upload / Kelola Berkas Persyaratan"
-                              >
-                                <Upload className="w-3.5 h-3.5 text-blue-400" />
-                                <span>Upload Berkas</span>
-                                {uploadedDocsCountMap[p.id] ? (
-                                  <span className="bg-blue-500 text-slate-950 font-mono text-[10px] font-bold px-1.5 py-0.2 rounded-full">
-                                    {uploadedDocsCountMap[p.id]}
-                                  </span>
-                                ) : null}
-                              </button>
+                              {isAdminMode ? (
+                                <button
+                                  onClick={() => onOpenUploadModal(p)}
+                                  className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition cursor-pointer border min-h-[36px] ${
+                                    uploadedDocsCountMap[p.id]
+                                      ? 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border-emerald-500/40 shadow-sm'
+                                      : 'bg-slate-800/80 hover:bg-slate-800 text-slate-400 border-slate-700/60'
+                                  }`}
+                                  title="Buka Folder Berkas Pangkalan (Modul Admin)"
+                                >
+                                  {uploadedDocsCountMap[p.id] ? (
+                                    <>
+                                      <FolderCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                      <span>Folder: Ada File ({uploadedDocsCountMap[p.id]})</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <FolderX className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                      <span>Folder Kosong</span>
+                                    </>
+                                  )}
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => onOpenUploadModal(p)}
+                                  className="inline-flex items-center gap-1.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40 text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition cursor-pointer shadow-sm min-h-[36px]"
+                                  title="Upload / Kelola Berkas Persyaratan"
+                                >
+                                  <Upload className="w-3.5 h-3.5 text-blue-400" />
+                                  <span>Upload Berkas</span>
+                                  {uploadedDocsCountMap[p.id] ? (
+                                    <span className="bg-blue-500 text-slate-950 font-mono text-[10px] font-bold px-1.5 py-0.2 rounded-full">
+                                      {uploadedDocsCountMap[p.id]}
+                                    </span>
+                                  ) : null}
+                                </button>
+                              )}
 
                               <button
                                 onClick={() => onSelectPangkalanForLetter(p, 'permohonan')}

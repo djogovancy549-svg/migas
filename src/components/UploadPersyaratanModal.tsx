@@ -12,7 +12,11 @@ import {
   Building,
   ShieldAlert,
   Download,
-  Plus
+  Plus,
+  Folder,
+  FolderCheck,
+  FolderOpen,
+  FolderX
 } from 'lucide-react';
 import { Pangkalan, MasterRequirementItem, UploadedDocument } from '../types';
 
@@ -78,7 +82,7 @@ export const UploadPersyaratanModal: React.FC<UploadPersyaratanModalProps> = ({
         <div className="bg-slate-950 p-5 border-b border-slate-800 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center shrink-0">
-              <Upload className="w-5 h-5" />
+              {isAdminMode ? <FolderOpen className="w-5 h-5" /> : <Upload className="w-5 h-5" />}
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -88,8 +92,15 @@ export const UploadPersyaratanModal: React.FC<UploadPersyaratanModalProps> = ({
                 <span className="text-xs text-slate-400">
                   Kel. {pangkalan.kelurahan}, Kec. {pangkalan.kecamatan}
                 </span>
+                {isAdminMode && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    Mode Admin
+                  </span>
+                )}
               </div>
-              <h2 className="text-lg font-bold text-white mt-0.5">{pangkalan.nama}</h2>
+              <h2 className="text-lg font-bold text-white mt-0.5">
+                {isAdminMode ? `Folder Berkas & Verifikasi: ${pangkalan.nama}` : `Upload Persyaratan: ${pangkalan.nama}`}
+              </h2>
             </div>
           </div>
 
@@ -117,10 +128,17 @@ export const UploadPersyaratanModal: React.FC<UploadPersyaratanModalProps> = ({
           {/* Status Banner */}
           <div className="bg-slate-950/70 border border-slate-800 p-4 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="space-y-1">
-              <p className="text-slate-400 text-xs font-medium">Status Upload Berkas Persyaratan:</p>
+              <p className="text-slate-400 text-xs font-medium flex items-center gap-1.5">
+                {isAdminMode ? <Folder className="w-4 h-4 text-amber-400" /> : <FileCheck className="w-4 h-4 text-amber-400" />}
+                <span>{isAdminMode ? 'Status Folder Berkas Pangkalan (Admin):' : 'Status Upload Berkas Persyaratan:'}</span>
+              </p>
               <div className="flex items-center gap-2">
                 <span className="text-base font-bold text-white">
-                  {uploadedCount} / {totalReqCount} Dokumen Ter-upload
+                  {isAdminMode
+                    ? uploadedCount > 0
+                      ? `Folder Ada File (${uploadedCount} dari ${totalReqCount} Dokumen)`
+                      : 'Folder Kosong (Belum ada file terupload)'
+                    : `${uploadedCount} / ${totalReqCount} Dokumen Ter-upload`}
                 </span>
                 {uploadedCount === totalReqCount && (
                   <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
@@ -274,16 +292,35 @@ export const UploadPersyaratanModal: React.FC<UploadPersyaratanModalProps> = ({
                         {/* Upload Controls / Admin Actions */}
                         <div className="shrink-0 flex items-center gap-2">
                           {!doc ? (
-                            <label className="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-xs transition cursor-pointer shadow-md shadow-amber-500/10">
-                              <Upload className="w-3.5 h-3.5" />
-                              <span>Upload File</span>
-                              <input
-                                type="file"
-                                accept=".pdf,.jpeg,.jpg,.png,.doc,.docx"
-                                className="hidden"
-                                onChange={(e) => handleFileInputChange(req.key, req.label, e)}
-                              />
-                            </label>
+                            isAdminMode ? (
+                              <div className="flex items-center gap-2">
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 border border-slate-800 text-slate-400 font-semibold rounded-xl text-xs">
+                                  <FolderX className="w-3.5 h-3.5 text-amber-400/80 shrink-0" />
+                                  <span>Folder Kosong</span>
+                                </span>
+                                <label className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl text-[11px] font-semibold transition cursor-pointer" title="Upload atas nama pangkalan">
+                                  <Upload className="w-3 h-3" />
+                                  <span>Upload</span>
+                                  <input
+                                    type="file"
+                                    accept=".pdf,.jpeg,.jpg,.png,.doc,.docx"
+                                    className="hidden"
+                                    onChange={(e) => handleFileInputChange(req.key, req.label, e)}
+                                  />
+                                </label>
+                              </div>
+                            ) : (
+                              <label className="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-xs transition cursor-pointer shadow-md shadow-amber-500/10">
+                                <Upload className="w-3.5 h-3.5" />
+                                <span>Upload File</span>
+                                <input
+                                  type="file"
+                                  accept=".pdf,.jpeg,.jpg,.png,.doc,.docx"
+                                  className="hidden"
+                                  onChange={(e) => handleFileInputChange(req.key, req.label, e)}
+                                />
+                              </label>
+                            )
                           ) : (
                             <label className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl text-xs font-semibold transition cursor-pointer">
                               <Upload className="w-3 h-3" />
