@@ -1,4 +1,5 @@
 import { Pangkalan, UploadedDocument } from '../types';
+import { DEFAULT_ADMIN_SHEET_ID, DEFAULT_ADMIN_SHEET_URL } from '../data/pangkalanData';
 
 /**
  * Export/Sync Pangkalan List to Google Sheets
@@ -10,7 +11,7 @@ export async function exportToGoogleSheets(
   allowCreateNewIfMissing: boolean = false
 ): Promise<{ spreadsheetId: string; spreadsheetUrl: string }> {
   try {
-    let spreadsheetId = existingSheetId;
+    let spreadsheetId = existingSheetId || DEFAULT_ADMIN_SHEET_ID;
 
     // 1. If no sheet ID, check if allowed to create new (Admin only)
     if (!spreadsheetId) {

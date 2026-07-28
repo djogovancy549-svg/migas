@@ -26,6 +26,7 @@ import {
   MapPin
 } from 'lucide-react';
 import { Pangkalan, UploadedDocument, AgenCompany, HetKecamatan } from '../types';
+import { DEFAULT_ADMIN_SHEET_ID, DEFAULT_ADMIN_SHEET_URL } from '../data/pangkalanData';
 import { safeLocalStorage } from '../lib/storage';
 import { exportToGoogleSheets, uploadFileToGoogleDrive } from '../lib/googleDriveSheetsService';
 
@@ -104,11 +105,11 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
   const [newAgenPJ, setNewAgenPJ] = useState('');
 
   const [sheetId, setSheetId] = useState<string | null>(() => {
-    return safeLocalStorage.getItem('pne_nagekeo_google_sheet_id');
+    return safeLocalStorage.getItem('pne_nagekeo_google_sheet_id') || DEFAULT_ADMIN_SHEET_ID;
   });
 
   const [sheetUrl, setSheetUrl] = useState<string | null>(() => {
-    return safeLocalStorage.getItem('pne_nagekeo_google_sheet_url');
+    return safeLocalStorage.getItem('pne_nagekeo_google_sheet_url') || DEFAULT_ADMIN_SHEET_URL;
   });
 
   const [connectedAdminEmail, setConnectedAdminEmail] = useState<string | null>(() => {

@@ -11,6 +11,7 @@ import {
   uploadFileToGoogleDrive,
 } from '../lib/googleDriveSheetsService';
 import { Pangkalan, UploadedDocument } from '../types';
+import { DEFAULT_ADMIN_SHEET_ID, DEFAULT_ADMIN_SHEET_URL } from '../data/pangkalanData';
 import { FileSpreadsheet, HardDrive, LogIn, LogOut, CheckCircle2, Loader2, ExternalLink, AlertCircle, Trash2 } from 'lucide-react';
 
 import { safeLocalStorage } from '../lib/storage';
@@ -35,17 +36,17 @@ export const GoogleSyncBar: React.FC<GoogleSyncBarProps> = ({
   const [isSyncingDrive, setIsSyncingDrive] = useState<boolean>(false);
 
   const [sheetUrl, setSheetUrl] = useState<string | null>(() => {
-    return safeLocalStorage.getItem('pne_nagekeo_google_sheet_url');
+    return safeLocalStorage.getItem('pne_nagekeo_google_sheet_url') || DEFAULT_ADMIN_SHEET_URL;
   });
   const [sheetId, setSheetId] = useState<string | null>(() => {
-    return safeLocalStorage.getItem('pne_nagekeo_google_sheet_id');
+    return safeLocalStorage.getItem('pne_nagekeo_google_sheet_id') || DEFAULT_ADMIN_SHEET_ID;
   });
 
   // Keep sheetId/sheetUrl updated in real-time if changed in Admin settings
   useEffect(() => {
     const handleStorageChange = () => {
-      setSheetId(safeLocalStorage.getItem('pne_nagekeo_google_sheet_id'));
-      setSheetUrl(safeLocalStorage.getItem('pne_nagekeo_google_sheet_url'));
+      setSheetId(safeLocalStorage.getItem('pne_nagekeo_google_sheet_id') || DEFAULT_ADMIN_SHEET_ID);
+      setSheetUrl(safeLocalStorage.getItem('pne_nagekeo_google_sheet_url') || DEFAULT_ADMIN_SHEET_URL);
     };
 
     window.addEventListener('storage', handleStorageChange);

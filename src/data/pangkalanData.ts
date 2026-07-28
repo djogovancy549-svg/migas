@@ -36,6 +36,9 @@ export const INITIAL_AGEN_LIST: AgenCompany[] = [
   },
 ];
 
+export const DEFAULT_ADMIN_SHEET_ID = '12cZeEn70SByneJN8G5jLP9rJvNus2G6TIzbk3W39OSI';
+export const DEFAULT_ADMIN_SHEET_URL = 'https://docs.google.com/spreadsheets/d/12cZeEn70SByneJN8G5jLP9rJvNus2G6TIzbk3W39OSI/edit?gid=0#gid=0';
+
 export const PEMDA_INFO = {
   nama: "PEMERINTAH KABUPATEN NAGEKEO",
   instansi: "BAGIAN PEREKONOMIAN DAN SDA SETDA KABUPATEN NAGEKEO",
