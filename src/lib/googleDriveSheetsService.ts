@@ -1,15 +1,79 @@
 import { Pangkalan, UploadedDocument } from '../types';
-import { DEFAULT_ADMIN_SHEET_ID, DEFAULT_ADMIN_SHEET_URL } from '../data/pangkalanData';
+import { DEFAULT_ADMIN_SHEET_ID, DEFAULT_ADMIN_SHEET_URL, INITIAL_PANGKALAN_LIST } from '../data/pangkalanData';
 
 /**
- * Export/Sync Pangkalan List to Google Sheets
+ * Fetch existing Pangkalan rows from Google Sheet
+ */
+export async function fetchPangkalanFromGoogleSheets(
+  accessToken: string,
+  spreadsheetId: string = DEFAULT_ADMIN_SHEET_ID
+): Promise<Pangkalan[]> {
+  try {
+    const res = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/A2:J500`,
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }
+    );
+
+    if (!res.ok) {
+      console.warn('Could not fetch existing Google Sheet rows:', await res.text());
+      return [];
+    }
+
+    const data = await res.json();
+    if (!data.values || !Array.isArray(data.values)) return [];
+
+    const fetchedList: Pangkalan[] = [];
+    data.values.forEach((row: any[], index: number) => {
+      // Must have at least ID and Nama
+      if (!row || row.length < 3 || !row[1]) return;
+
+      const id = String(row[1]).trim();
+      const nama = String(row[2] || '').trim();
+      if (!id || !nama) return;
+
+      const alamat = String(row[3] || '').trim();
+      const kelurahan = String(row[4] || '').trim();
+      const kecamatan = String(row[5] || '').trim();
+      const kabupaten = String(row[6] || 'NAGEKEO').trim();
+      const propinsi = String(row[7] || 'NTT').trim();
+      const kuota = parseInt(row[8], 10) || 200;
+      const status = String(row[9] || 'Aktif').trim();
+
+      fetchedList.push({
+        id,
+        no: parseInt(row[0], 10) || index + 1,
+        nama,
+        alamat: alamat || 'Mbay',
+        kelurahan: kelurahan || 'Mbay',
+        kecamatan: kecamatan || 'Aesesa',
+        kabupaten: kabupaten || 'NAGEKEO',
+        propinsi: propinsi || 'NTT',
+        kuotaHarianLiter: kuota,
+        statusPerizinan: status as any,
+        namaUsaha: `Pangkalan ${nama}`,
+        namaAgen: 'PT. PUTRA NGADA ENERGI (NAGEKEO)',
+        agenId: 'agen_1',
+      });
+    });
+
+    return fetchedList;
+  } catch (err) {
+    console.error('Error fetching pangkalan from Google Sheets:', err);
+    return [];
+  }
+}
+
+/**
+ * Export/Sync Pangkalan List to Google Sheets with automatic MERGE (Append & Preserve existing)
  */
 export async function exportToGoogleSheets(
   accessToken: string,
   pangkalanList: Pangkalan[],
   existingSheetId?: string,
   allowCreateNewIfMissing: boolean = false
-): Promise<{ spreadsheetId: string; spreadsheetUrl: string }> {
+): Promise<{ spreadsheetId: string; spreadsheetUrl: string; mergedPangkalanList: Pangkalan[] }> {
   try {
     let spreadsheetId = existingSheetId || DEFAULT_ADMIN_SHEET_ID;
 
@@ -43,7 +107,45 @@ export async function exportToGoogleSheets(
       spreadsheetId = createData.spreadsheetId;
     }
 
-    // 2. Prepare headers and rows
+    // 2. Read existing rows from Google Sheet first to ensure NO EXISTING DATA IS EVER DELETED/OVERWRITTEN
+    let existingSheetRows: Pangkalan[] = [];
+    if (accessToken && spreadsheetId) {
+      existingSheetRows = await fetchPangkalanFromGoogleSheets(accessToken, spreadsheetId);
+    }
+
+    // 3. Merge: Default Initial Data + Existing Google Sheet Rows + Local Pangkalan List
+    const mergedMap = new Map<string, Pangkalan>();
+
+    // Step A: Seed with default initial data (PGK-7777, PGK-6228)
+    INITIAL_PANGKALAN_LIST.forEach((item) => {
+      mergedMap.set(item.id.toLowerCase(), item);
+    });
+
+    // Step B: Add existing items from Google Sheet
+    existingSheetRows.forEach((item) => {
+      if (item.id) {
+        const key = item.id.toLowerCase();
+        const prev = mergedMap.get(key);
+        mergedMap.set(key, prev ? { ...prev, ...item } : item);
+      }
+    });
+
+    // Step C: Add/update local pangkalan entries
+    pangkalanList.forEach((item) => {
+      if (item.id) {
+        const key = item.id.toLowerCase();
+        const prev = mergedMap.get(key);
+        mergedMap.set(key, prev ? { ...prev, ...item } : item);
+      }
+    });
+
+    // Final consolidated array
+    const mergedPangkalanList = Array.from(mergedMap.values()).map((p, idx) => ({
+      ...p,
+      no: idx + 1,
+    }));
+
+    // 4. Prepare headers and rows
     const headers = [
       'No',
       'ID Pangkalan',
@@ -57,7 +159,7 @@ export async function exportToGoogleSheets(
       'Status Perizinan',
     ];
 
-    const rows = pangkalanList.map((p, index) => [
+    const rows = mergedPangkalanList.map((p, index) => [
       index + 1,
       p.id,
       p.nama,
@@ -72,7 +174,7 @@ export async function exportToGoogleSheets(
 
     const values = [headers, ...rows];
 
-    // 3. Update spreadsheet content
+    // 5. Update spreadsheet content safely
     const updateRes = await fetch(
       `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/A1:J${values.length}?valueInputOption=USER_ENTERED`,
       {
@@ -95,6 +197,7 @@ export async function exportToGoogleSheets(
     return {
       spreadsheetId: spreadsheetId!,
       spreadsheetUrl: `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`,
+      mergedPangkalanList,
     };
   } catch (err: any) {
     console.error('exportToGoogleSheets error:', err);

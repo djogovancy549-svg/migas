@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Pangkalan, PersyaratanStatus, MasterRequirementItem, UploadedDocument, RekomendasiPerizinan, AgenCompany, HetKecamatan } from './types';
-import { INITIAL_PANGKALAN_LIST, INITIAL_CHECKLIST_STATUS, INITIAL_AGEN_LIST, INITIAL_HET_LIST, PEMDA_INFO } from './data/pangkalanData';
+import { INITIAL_PANGKALAN_LIST, INITIAL_CHECKLIST_STATUS, INITIAL_AGEN_LIST, INITIAL_HET_LIST, PEMDA_INFO, DEFAULT_ADMIN_SHEET_ID } from './data/pangkalanData';
 import { INITIAL_MASTER_REQUIREMENTS } from './data/masterRequirements';
 import { safeLocalStorage } from './lib/storage';
 import { initAuthListener } from './lib/googleAuth';
+import { fetchPangkalanFromGoogleSheets } from './lib/googleDriveSheetsService';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Header } from './components/Header';
 import { TabNavigation, TabType } from './components/TabNavigation';
@@ -76,18 +77,30 @@ export default function App() {
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
   const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null);
 
-  // Load initial dataset or restore from safeLocalStorage
+  // Load initial dataset or restore from safeLocalStorage with merging
   const [pangkalanList, setPangkalanList] = useState<Pangkalan[]>(() => {
+    let list: Pangkalan[] = INITIAL_PANGKALAN_LIST;
     const saved = safeLocalStorage.getItem('pne_nagekeo_pangkalan_data');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const mergedMap = new Map<string, Pangkalan>();
+          INITIAL_PANGKALAN_LIST.forEach((item) => mergedMap.set(item.id.toLowerCase(), item));
+          parsed.forEach((item: Pangkalan) => {
+            if (item && item.id) {
+              const key = item.id.toLowerCase();
+              const prev = mergedMap.get(key);
+              mergedMap.set(key, prev ? { ...prev, ...item } : item);
+            }
+          });
+          list = Array.from(mergedMap.values());
+        }
       } catch (e) {
         console.error('Failed to parse saved pangkalan data', e);
       }
     }
-    return INITIAL_PANGKALAN_LIST;
+    return list.map((item, idx) => ({ ...item, no: idx + 1 }));
   });
 
   const [checklistData, setChecklistData] = useState<Record<string, PersyaratanStatus>>(() => {
@@ -218,6 +231,38 @@ export default function App() {
     );
     return () => unsubscribe();
   }, [authorizedAdminEmails]);
+
+  // Auto fetch & merge Google Sheets data when googleAccessToken is active
+  useEffect(() => {
+    if (googleAccessToken) {
+      const targetSheetId = safeLocalStorage.getItem('pne_nagekeo_google_sheet_id') || DEFAULT_ADMIN_SHEET_ID;
+      fetchPangkalanFromGoogleSheets(googleAccessToken, targetSheetId)
+        .then((sheetItems) => {
+          if (sheetItems && sheetItems.length > 0) {
+            setPangkalanList((prev) => {
+              const mergedMap = new Map<string, Pangkalan>();
+              INITIAL_PANGKALAN_LIST.forEach((item) => mergedMap.set(item.id.toLowerCase(), item));
+              sheetItems.forEach((item) => {
+                if (item && item.id) {
+                  const key = item.id.toLowerCase();
+                  const existing = mergedMap.get(key);
+                  mergedMap.set(key, existing ? { ...existing, ...item } : item);
+                }
+              });
+              prev.forEach((item) => {
+                if (item && item.id) {
+                  const key = item.id.toLowerCase();
+                  const existing = mergedMap.get(key);
+                  mergedMap.set(key, existing ? { ...existing, ...item } : item);
+                }
+              });
+              return Array.from(mergedMap.values()).map((p, idx) => ({ ...p, no: idx + 1 }));
+            });
+          }
+        })
+        .catch((err) => console.error('Auto fetch Google Sheets error:', err));
+    }
+  }, [googleAccessToken]);
 
   // Save changes to safeLocalStorage
   useEffect(() => {
@@ -576,6 +621,7 @@ export default function App() {
             uploadedDocs={uploadedDocs}
             isAdminMode={isAdminMode}
             onClearDummyData={handleClearDummyData}
+            onUpdatePangkalanList={(newList) => setPangkalanList(newList)}
           />
         </div>
 
@@ -670,6 +716,7 @@ export default function App() {
               onRequestAdminAuth={() => setAuthModalState({ isOpen: true, targetRole: 'admin' })}
               onExitAdminMode={() => setIsAdminMode(false)}
               onClearData={handleClearDummyData}
+              onUpdatePangkalanList={(newList) => setPangkalanList(newList)}
             />
           )}
         </ErrorBoundary>

@@ -21,6 +21,7 @@ interface GoogleSyncBarProps {
   uploadedDocs: UploadedDocument[];
   isAdminMode?: boolean;
   onClearDummyData: () => void;
+  onUpdatePangkalanList?: (newList: Pangkalan[]) => void;
 }
 
 export const GoogleSyncBar: React.FC<GoogleSyncBarProps> = ({
@@ -28,6 +29,7 @@ export const GoogleSyncBar: React.FC<GoogleSyncBarProps> = ({
   uploadedDocs,
   isAdminMode = false,
   onClearDummyData,
+  onUpdatePangkalanList,
 }) => {
   const [user, setUser] = useState<User | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
@@ -130,9 +132,15 @@ export const GoogleSyncBar: React.FC<GoogleSyncBarProps> = ({
       safeLocalStorage.setItem('pne_nagekeo_google_sheet_id', result.spreadsheetId);
       safeLocalStorage.setItem('pne_nagekeo_google_sheet_url', result.spreadsheetUrl);
 
+      if (result.mergedPangkalanList && onUpdatePangkalanList) {
+        onUpdatePangkalanList(result.mergedPangkalanList);
+      }
+
+      const totalMerged = result.mergedPangkalanList ? result.mergedPangkalanList.length : pangkalanList.length;
+
       setNotification({
         type: 'success',
-        message: `Data ${pangkalanList.length} pangkalan berhasil tersimpan ke Google Sheet Admin Pusat!`,
+        message: `Data ${totalMerged} pangkalan berhasil digabungkan & tersimpan ke Google Sheet Admin Pusat!`,
       });
     } catch (err: any) {
       setNotification({

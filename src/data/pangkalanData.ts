@@ -1,7 +1,42 @@
 import { Pangkalan, PersyaratanStatus, AgenCompany, HetKecamatan } from '../types';
 
-// Default initial pangkalan list is clean/empty as requested by user
-export const INITIAL_PANGKALAN_LIST: Pangkalan[] = [];
+// Initial pangkalan list populated with data from Admin Google Sheet
+export const INITIAL_PANGKALAN_LIST: Pangkalan[] = [
+  {
+    id: 'PGK-7777',
+    no: 1,
+    nama: 'Vancy Djogo',
+    alamat: 'PISA',
+    kelurahan: 'Mbay',
+    kecamatan: 'Aesesa',
+    kabupaten: 'NAGEKEO',
+    propinsi: 'NTT',
+    kuotaHarianLiter: 200,
+    kuotaBulananLiter: 6000,
+    statusPerizinan: 'Aktif',
+    namaUsaha: 'Pangkalan Minyak Tanah Vancy Djogo',
+    nomorHp: '081234567890',
+    namaAgen: 'PT. PUTRA NGADA ENERGI (NAGEKEO)',
+    agenId: 'agen_1',
+  },
+  {
+    id: 'PGK-6228',
+    no: 2,
+    nama: 'Deni',
+    alamat: 'fasfasf',
+    kelurahan: 'Mbay',
+    kecamatan: 'Aesesa',
+    kabupaten: 'NAGEKEO',
+    propinsi: 'NTT',
+    kuotaHarianLiter: 200,
+    kuotaBulananLiter: 6000,
+    statusPerizinan: 'Aktif',
+    namaUsaha: 'Pangkalan Minyak Tanah Deni',
+    nomorHp: '081234567891',
+    namaAgen: 'PT. PUTRA NGADA ENERGI (NAGEKEO)',
+    agenId: 'agen_1',
+  },
+];
 
 export const INITIAL_HET_LIST: HetKecamatan[] = [
   { kecamatan: 'Aesesa', hargaHetPerLiter: 4660, skBupatiNomor: '236/KEP/HK/2018' },
@@ -57,4 +92,27 @@ export const AGEN_INFO = {
   provinsi: "NUSA TENGGARA TIMUR"
 };
 
-export const INITIAL_CHECKLIST_STATUS: Record<string, PersyaratanStatus> = {};
+export const INITIAL_CHECKLIST_STATUS: Record<string, PersyaratanStatus> = {
+  'PGK-7777': {
+    pangkalanId: 'PGK-7777',
+    jenis: 'Perpanjangan',
+    suratPermohonan: true,
+    ktp: true,
+    npwp: true,
+    nib: true,
+    sku: true,
+    suratPernyataan: true,
+    rekomendasiSebelumnya: true,
+  },
+  'PGK-6228': {
+    pangkalanId: 'PGK-6228',
+    jenis: 'Perpanjangan',
+    suratPermohonan: true,
+    ktp: true,
+    npwp: true,
+    nib: true,
+    sku: true,
+    suratPernyataan: true,
+    rekomendasiSebelumnya: true,
+  },
+};

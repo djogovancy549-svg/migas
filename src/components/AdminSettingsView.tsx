@@ -50,6 +50,7 @@ interface AdminSettingsViewProps {
   onRequestAdminAuth: () => void;
   onExitAdminMode: () => void;
   onClearData: () => void;
+  onUpdatePangkalanList?: (newList: Pangkalan[]) => void;
 }
 
 export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
@@ -72,6 +73,7 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
   onRequestAdminAuth,
   onExitAdminMode,
   onClearData,
+  onUpdatePangkalanList,
 }) => {
   const [newEmailInput, setNewEmailInput] = useState('');
   const [customSheetInput, setCustomSheetInput] = useState('');
@@ -326,9 +328,15 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
           safeLocalStorage.setItem('pne_nagekeo_connected_admin_email', currentUserEmail);
         }
 
+        if (res.mergedPangkalanList && onUpdatePangkalanList) {
+          onUpdatePangkalanList(res.mergedPangkalanList);
+        }
+
+        const totalMerged = res.mergedPangkalanList ? res.mergedPangkalanList.length : pangkalanList.length;
+
         setNotification({
           type: 'success',
-          message: `Berhasil sinkronisasi ${pangkalanList.length} pangkalan ke Google Sheet Admin Pusat!`,
+          message: `Berhasil menggabungkan & sinkronisasi ${totalMerged} pangkalan ke Google Sheet Admin Pusat!`,
         });
       }
     } catch (err: any) {
