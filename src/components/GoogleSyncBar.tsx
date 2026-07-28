@@ -12,7 +12,7 @@ import {
 } from '../lib/googleDriveSheetsService';
 import { Pangkalan, UploadedDocument } from '../types';
 import { DEFAULT_ADMIN_SHEET_ID, DEFAULT_ADMIN_SHEET_URL } from '../data/pangkalanData';
-import { FileSpreadsheet, HardDrive, LogIn, LogOut, CheckCircle2, Loader2, ExternalLink, AlertCircle, Trash2 } from 'lucide-react';
+import { FileSpreadsheet, HardDrive, LogIn, LogOut, CheckCircle2, Loader2, ExternalLink, AlertCircle, Trash2, BellRing } from 'lucide-react';
 
 import { safeLocalStorage } from '../lib/storage';
 
@@ -22,6 +22,8 @@ interface GoogleSyncBarProps {
   isAdminMode?: boolean;
   onClearDummyData: () => void;
   onUpdatePangkalanList?: (newList: Pangkalan[]) => void;
+  pendingUnsyncedNotice?: string | null;
+  onClearPendingNotice?: () => void;
 }
 
 export const GoogleSyncBar: React.FC<GoogleSyncBarProps> = ({
@@ -30,6 +32,8 @@ export const GoogleSyncBar: React.FC<GoogleSyncBarProps> = ({
   isAdminMode = false,
   onClearDummyData,
   onUpdatePangkalanList,
+  pendingUnsyncedNotice,
+  onClearPendingNotice,
 }) => {
   const [user, setUser] = useState<User | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
@@ -134,6 +138,10 @@ export const GoogleSyncBar: React.FC<GoogleSyncBarProps> = ({
 
       if (result.mergedPangkalanList && onUpdatePangkalanList) {
         onUpdatePangkalanList(result.mergedPangkalanList);
+      }
+
+      if (onClearPendingNotice) {
+        onClearPendingNotice();
       }
 
       const totalMerged = result.mergedPangkalanList ? result.mergedPangkalanList.length : pangkalanList.length;
@@ -282,20 +290,50 @@ export const GoogleSyncBar: React.FC<GoogleSyncBarProps> = ({
         </div>
       </div>
 
+      {/* Unsynced Data Alert Banner */}
+      {pendingUnsyncedNotice && (
+        <div className="bg-amber-500/20 border-2 border-amber-500/80 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-amber-200 text-xs animate-pulse">
+          <div className="flex items-center gap-2.5">
+            <BellRing className="w-5 h-5 text-amber-400 shrink-0" />
+            <div>
+              <span className="font-extrabold text-white block">Pemberitahuan Data Baru / Diperbarui:</span>
+              <span className="text-amber-200">{pendingUnsyncedNotice}</span>
+            </div>
+          </div>
+          <button
+            onClick={handleSyncSheets}
+            disabled={isSyncingSheets}
+            className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-3.5 py-1.5 rounded-lg text-xs shadow-md transition shrink-0 cursor-pointer"
+          >
+            Tekan Simpan Sekarang
+          </button>
+        </div>
+      )}
+
       {/* Action Buttons for Sheets, Drive, & Clear Dummy */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-slate-800">
         {/* Sync Google Sheets */}
         <button
           onClick={handleSyncSheets}
           disabled={isSyncingSheets}
-          className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition shadow cursor-pointer min-h-[44px]"
+          className={`inline-flex items-center justify-center gap-2 font-bold px-4 py-2.5 rounded-xl text-xs transition shadow cursor-pointer min-h-[44px] ${
+            pendingUnsyncedNotice
+              ? 'bg-gradient-to-r from-amber-500 to-emerald-600 hover:from-amber-400 hover:to-emerald-500 text-slate-950 font-black ring-4 ring-amber-400/50 animate-pulse'
+              : 'bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 text-white'
+          }`}
         >
           {isSyncingSheets ? (
             <Loader2 className="w-4 h-4 animate-spin text-white" />
           ) : (
-            <FileSpreadsheet className="w-4 h-4 text-emerald-200" />
+            <FileSpreadsheet className={`w-4 h-4 ${pendingUnsyncedNotice ? 'text-slate-950' : 'text-emerald-200'}`} />
           )}
-          <span>{isSyncingSheets ? 'Menyimpan...' : 'Simpan ke Google Sheets'}</span>
+          <span>
+            {isSyncingSheets
+              ? 'Menyimpan...'
+              : pendingUnsyncedNotice
+              ? '⚠️ Klik di Sini: Simpan ke Google Sheet'
+              : 'Simpan ke Google Sheets'}
+          </span>
         </button>
 
         {/* Sync Google Drive */}

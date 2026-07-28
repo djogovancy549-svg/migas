@@ -1,68 +1,89 @@
 import { Pangkalan, UploadedDocument } from '../types';
 import { DEFAULT_ADMIN_SHEET_ID, DEFAULT_ADMIN_SHEET_URL, INITIAL_PANGKALAN_LIST } from '../data/pangkalanData';
 
+function parseRowsToPangkalan(rows: any[][]): Pangkalan[] {
+  const fetchedList: Pangkalan[] = [];
+  rows.forEach((row: any[], index: number) => {
+    if (!row || row.length < 3 || !row[1]) return;
+
+    const id = String(row[1]).trim();
+    const nama = String(row[2] || '').trim();
+    if (!id || !nama || id.toLowerCase() === 'id pangkalan') return;
+
+    const alamat = String(row[3] || '').trim();
+    const kelurahan = String(row[4] || '').trim();
+    const kecamatan = String(row[5] || '').trim();
+    const kabupaten = String(row[6] || 'NAGEKEO').trim();
+    const propinsi = String(row[7] || 'NTT').trim();
+    const kuota = parseInt(String(row[8]), 10) || 200;
+    const status = String(row[9] || 'Aktif').trim();
+
+    fetchedList.push({
+      id,
+      no: parseInt(String(row[0]), 10) || index + 1,
+      nama,
+      alamat: alamat || 'Mbay',
+      kelurahan: kelurahan || 'Mbay',
+      kecamatan: kecamatan || 'Aesesa',
+      kabupaten: kabupaten || 'NAGEKEO',
+      propinsi: propinsi || 'NTT',
+      kuotaHarianLiter: kuota,
+      kuotaBulananLiter: kuota * 30,
+      statusPerizinan: (status.toLowerCase().includes('aktif') ? 'Aktif' : status) as any,
+      namaUsaha: `Pangkalan ${nama}`,
+      namaAgen: 'PT. PUTRA NGADA ENERGI (NAGEKEO)',
+      agenId: 'agen_1',
+    });
+  });
+  return fetchedList;
+}
+
 /**
- * Fetch existing Pangkalan rows from Google Sheet
+ * Fetch existing Pangkalan rows from Google Sheet with API or CSV fallback
  */
 export async function fetchPangkalanFromGoogleSheets(
-  accessToken: string,
+  accessToken?: string | null,
   spreadsheetId: string = DEFAULT_ADMIN_SHEET_ID
 ): Promise<Pangkalan[]> {
-  try {
-    const res = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/A2:J500`,
-      {
-        headers: { Authorization: `Bearer ${accessToken}` },
+  // 1. Try Google Sheets API if token provided
+  if (accessToken) {
+    try {
+      const res = await fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/A2:J500`,
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }
+      );
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.values && Array.isArray(data.values)) {
+          return parseRowsToPangkalan(data.values);
+        }
       }
-    );
-
-    if (!res.ok) {
-      console.warn('Could not fetch existing Google Sheet rows:', await res.text());
-      return [];
+    } catch (err) {
+      console.warn('API fetch failed, attempting public CSV fallback:', err);
     }
-
-    const data = await res.json();
-    if (!data.values || !Array.isArray(data.values)) return [];
-
-    const fetchedList: Pangkalan[] = [];
-    data.values.forEach((row: any[], index: number) => {
-      // Must have at least ID and Nama
-      if (!row || row.length < 3 || !row[1]) return;
-
-      const id = String(row[1]).trim();
-      const nama = String(row[2] || '').trim();
-      if (!id || !nama) return;
-
-      const alamat = String(row[3] || '').trim();
-      const kelurahan = String(row[4] || '').trim();
-      const kecamatan = String(row[5] || '').trim();
-      const kabupaten = String(row[6] || 'NAGEKEO').trim();
-      const propinsi = String(row[7] || 'NTT').trim();
-      const kuota = parseInt(row[8], 10) || 200;
-      const status = String(row[9] || 'Aktif').trim();
-
-      fetchedList.push({
-        id,
-        no: parseInt(row[0], 10) || index + 1,
-        nama,
-        alamat: alamat || 'Mbay',
-        kelurahan: kelurahan || 'Mbay',
-        kecamatan: kecamatan || 'Aesesa',
-        kabupaten: kabupaten || 'NAGEKEO',
-        propinsi: propinsi || 'NTT',
-        kuotaHarianLiter: kuota,
-        statusPerizinan: status as any,
-        namaUsaha: `Pangkalan ${nama}`,
-        namaAgen: 'PT. PUTRA NGADA ENERGI (NAGEKEO)',
-        agenId: 'agen_1',
-      });
-    });
-
-    return fetchedList;
-  } catch (err) {
-    console.error('Error fetching pangkalan from Google Sheets:', err);
-    return [];
   }
+
+  // 2. Try Public CSV export fallback
+  try {
+    const csvUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=csv`;
+    const res = await fetch(csvUrl);
+    if (res.ok) {
+      const text = await res.text();
+      const lines = text.split(/\r?\n/).map((line) =>
+        line.split(',').map((cell) => cell.replace(/^"(.*)"$/, '$1').trim())
+      );
+      if (lines.length > 1) {
+        return parseRowsToPangkalan(lines.slice(1));
+      }
+    }
+  } catch (err) {
+    console.warn('CSV export fetch failed:', err);
+  }
+
+  return [];
 }
 
 /**

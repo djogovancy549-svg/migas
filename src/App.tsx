@@ -5,6 +5,7 @@ import { INITIAL_MASTER_REQUIREMENTS } from './data/masterRequirements';
 import { safeLocalStorage } from './lib/storage';
 import { initAuthListener } from './lib/googleAuth';
 import { fetchPangkalanFromGoogleSheets } from './lib/googleDriveSheetsService';
+import { BellRing, X, FileSpreadsheet } from 'lucide-react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Header } from './components/Header';
 import { TabNavigation, TabType } from './components/TabNavigation';
@@ -209,6 +210,9 @@ export default function App() {
   const [isRekomendasiModalOpen, setIsRekomendasiModalOpen] = useState<boolean>(false);
   const [rekomendasiTargetPangkalan, setRekomendasiTargetPangkalan] = useState<Pangkalan | null>(null);
 
+  // Unsynced data notice for Admin
+  const [pendingUnsyncedNotice, setPendingUnsyncedNotice] = useState<string | null>(null);
+
   // Google Auth Listener to auto-grant Admin mode ONLY if user's email matches authorizedAdminEmails
   useEffect(() => {
     const unsubscribe = initAuthListener(
@@ -232,36 +236,34 @@ export default function App() {
     return () => unsubscribe();
   }, [authorizedAdminEmails]);
 
-  // Auto fetch & merge Google Sheets data when googleAccessToken is active
+  // Auto fetch & merge Google Sheets data on mount and when googleAccessToken is active
   useEffect(() => {
-    if (googleAccessToken) {
-      const targetSheetId = safeLocalStorage.getItem('pne_nagekeo_google_sheet_id') || DEFAULT_ADMIN_SHEET_ID;
-      fetchPangkalanFromGoogleSheets(googleAccessToken, targetSheetId)
-        .then((sheetItems) => {
-          if (sheetItems && sheetItems.length > 0) {
-            setPangkalanList((prev) => {
-              const mergedMap = new Map<string, Pangkalan>();
-              INITIAL_PANGKALAN_LIST.forEach((item) => mergedMap.set(item.id.toLowerCase(), item));
-              sheetItems.forEach((item) => {
-                if (item && item.id) {
-                  const key = item.id.toLowerCase();
-                  const existing = mergedMap.get(key);
-                  mergedMap.set(key, existing ? { ...existing, ...item } : item);
-                }
-              });
-              prev.forEach((item) => {
-                if (item && item.id) {
-                  const key = item.id.toLowerCase();
-                  const existing = mergedMap.get(key);
-                  mergedMap.set(key, existing ? { ...existing, ...item } : item);
-                }
-              });
-              return Array.from(mergedMap.values()).map((p, idx) => ({ ...p, no: idx + 1 }));
+    const targetSheetId = safeLocalStorage.getItem('pne_nagekeo_google_sheet_id') || DEFAULT_ADMIN_SHEET_ID;
+    fetchPangkalanFromGoogleSheets(googleAccessToken, targetSheetId)
+      .then((sheetItems) => {
+        if (sheetItems && sheetItems.length > 0) {
+          setPangkalanList((prev) => {
+            const mergedMap = new Map<string, Pangkalan>();
+            INITIAL_PANGKALAN_LIST.forEach((item) => mergedMap.set(item.id.toLowerCase(), item));
+            sheetItems.forEach((item) => {
+              if (item && item.id) {
+                const key = item.id.toLowerCase();
+                const existing = mergedMap.get(key);
+                mergedMap.set(key, existing ? { ...existing, ...item } : item);
+              }
             });
-          }
-        })
-        .catch((err) => console.error('Auto fetch Google Sheets error:', err));
-    }
+            prev.forEach((item) => {
+              if (item && item.id) {
+                const key = item.id.toLowerCase();
+                const existing = mergedMap.get(key);
+                mergedMap.set(key, existing ? { ...existing, ...item } : item);
+              }
+            });
+            return Array.from(mergedMap.values()).map((p, idx) => ({ ...p, no: idx + 1 }));
+          });
+        }
+      })
+      .catch((err) => console.error('Auto fetch Google Sheets error:', err));
   }, [googleAccessToken]);
 
   // Save changes to safeLocalStorage
@@ -383,6 +385,10 @@ export default function App() {
         return [savedPangkalan, ...prev];
       }
     });
+
+    setPendingUnsyncedNotice(
+      `Pangkalan "${savedPangkalan.nama}" (${savedPangkalan.id}) telah diinput/diperbarui! Mohon tekan tombol 'Simpan ke Google Sheet' di Google Sync Bar agar data ini tersimpan secara permanen di Cloud Google Sheet Admin.`
+    );
   };
 
   const handleDeletePangkalan = (id: string) => {
@@ -614,14 +620,54 @@ export default function App() {
 
       {/* Main Content Body */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-6 space-y-4">
+        {/* Unsynced Data Alert Banner at Top */}
+        {pendingUnsyncedNotice && (
+          <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 p-4 rounded-2xl shadow-xl text-slate-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-2 border-amber-300 print:hidden animate-pulse">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-slate-950/15 rounded-xl">
+                <BellRing className="w-6 h-6 text-slate-950" />
+              </div>
+              <div>
+                <p className="font-black text-sm sm:text-base leading-tight">
+                  🔔 Pemberitahuan Admin: Ada Data Pangkalan Baru/Diperbarui!
+                </p>
+                <p className="text-xs font-semibold text-slate-900 mt-0.5">
+                  {pendingUnsyncedNotice}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+              <button
+                onClick={() => {
+                  const syncElem = document.getElementById('google-sync-bar');
+                  if (syncElem) syncElem.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="bg-slate-950 hover:bg-slate-900 text-amber-400 font-black px-4 py-2 rounded-xl text-xs shadow transition cursor-pointer flex items-center gap-1.5"
+              >
+                <FileSpreadsheet className="w-4 h-4 text-amber-400" />
+                <span>Tekan Simpan ke Google Sheet</span>
+              </button>
+              <button
+                onClick={() => setPendingUnsyncedNotice(null)}
+                className="p-1.5 hover:bg-slate-950/20 text-slate-950 rounded-lg transition"
+                title="Tutup"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Google Sync & Drive Bar */}
-        <div className="print:hidden">
+        <div id="google-sync-bar" className="print:hidden">
           <GoogleSyncBar
             pangkalanList={pangkalanList}
             uploadedDocs={uploadedDocs}
             isAdminMode={isAdminMode}
             onClearDummyData={handleClearDummyData}
             onUpdatePangkalanList={(newList) => setPangkalanList(newList)}
+            pendingUnsyncedNotice={pendingUnsyncedNotice}
+            onClearPendingNotice={() => setPendingUnsyncedNotice(null)}
           />
         </div>
 
