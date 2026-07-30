@@ -126,6 +126,8 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
     message: string;
   } | null>(null);
 
+  const [adminRegSuccess, setAdminRegSuccess] = useState<string | null>(null);
+
   // Save Pimpinan Info
   const handleSavePimpinanInfo = (e: React.FormEvent) => {
     e.preventDefault();
@@ -276,6 +278,7 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
 
     const updated = [...authorizedAdminEmails, clean];
     onUpdateAuthorizedEmails(updated);
+    setAdminRegSuccess(clean); // Store the newly registered email
     setNewEmailInput('');
     setNotification({
       type: 'success',
@@ -1129,28 +1132,65 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
 
           {/* Form Add New Admin Email (Super Admin Only) */}
           {(!currentUserEmail || SUPER_ADMIN_EMAILS.map((e) => e.toLowerCase()).includes(currentUserEmail.toLowerCase())) ? (
-            <form onSubmit={handleAddAdminEmail} className="space-y-2 pt-2 border-t border-slate-800">
-              <label className="text-xs font-bold text-slate-300 block">Tambah Email Admin Baru (Oleh Super Admin):</label>
-              <div className="flex items-center gap-2">
+            <form onSubmit={handleAddAdminEmail} className="space-y-3 pt-3 border-t border-slate-800">
+              <label className="text-xs font-bold text-slate-300 block">Tambah & Daftarkan Email Admin Baru (Oleh Super Admin):</label>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <input
                   type="email"
                   value={newEmailInput}
-                  onChange={(e) => setNewEmailInput(e.target.value)}
+                  onChange={(e) => {
+                    setNewEmailInput(e.target.value);
+                    if (adminRegSuccess) setAdminRegSuccess(null); // Clear success state when typing new email
+                  }}
                   placeholder="misal: petugasperekonomian@gmail.com"
-                  className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                  className="flex-1 bg-slate-950 border border-slate-850 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
                 />
                 <button
                   type="submit"
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs transition cursor-pointer shrink-0"
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl text-xs transition cursor-pointer shrink-0 shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20 active:scale-95"
                 >
-                  <UserPlus className="w-3.5 h-3.5" />
-                  <span>Tambah</span>
+                  <UserPlus className="w-4 h-4 text-white" />
+                  <span>Simpan & Daftarkan Admin Baru</span>
                 </button>
               </div>
             </form>
           ) : (
             <div className="p-3 bg-amber-950/30 border border-amber-800/50 rounded-xl text-xs text-amber-300">
               🔒 <strong>Pengelolaan Email Admin:</strong> Hanya Super Admin (bagianekonomisdangk@gmail.com / djogovancy549@gmail.com) yang dapat menambah atau menghapus email Admin.
+            </div>
+          )}
+
+          {/* Success Notification Alert Card (Directly visible in this panel) */}
+          {adminRegSuccess && (
+            <div className="p-4 bg-emerald-500/10 border-2 border-emerald-500/40 rounded-xl text-xs space-y-3 animate-fade-in">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-emerald-300 font-bold">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>BERHASIL MENDAFTARKAN ADMIN BARU!</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAdminRegSuccess(null)}
+                  className="text-slate-400 hover:text-white font-bold text-xs cursor-pointer"
+                >
+                  Tutup
+                </button>
+              </div>
+              <p className="text-slate-300 leading-relaxed">
+                Email <strong className="text-emerald-400 font-mono text-[12px] bg-slate-950 px-2 py-0.5 rounded border border-emerald-500/20">{adminRegSuccess}</strong> kini telah **berhasil didaftarkan** sebagai admin baru secara realtime di database cloud Firestore.
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    alert(`Pemberitahuan Sukses:\n\nEmail "${adminRegSuccess}" telah resmi terdaftar sebagai Admin Baru di database cloud Firestore.\n\nHak akses penuh telah dibuka secara otomatis dan langsung berlaku tanpa perlu restart.`);
+                  }}
+                  className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-lg text-[10px] uppercase tracking-wider transition cursor-pointer flex items-center gap-1 shadow-md shadow-emerald-500/10"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Tombol Pemberitahuan Sukses</span>
+                </button>
+              </div>
             </div>
           )}
 
