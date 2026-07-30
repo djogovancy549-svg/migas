@@ -371,7 +371,7 @@ export const GoogleSyncBar: React.FC<GoogleSyncBarProps> = ({
             <div className="truncate">
               <span className="font-bold text-white block truncate">Google Sheet Admin Pusat Terhubung</span>
               <span className="text-[10px] text-emerald-300/80 font-mono block truncate">
-                ID: {sheetId} • Sync Otomatis Cloud Google Drive
+                {isAdminMode && `ID: ${sheetId} • `}Sync Otomatis Cloud Google Drive
               </span>
             </div>
           </div>

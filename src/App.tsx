@@ -703,19 +703,17 @@ export default function App() {
         )}
 
         {/* Google Sync & Drive Bar */}
-        {!isNonAdminEmailLogged && (
-          <div id="google-sync-bar" className="print:hidden">
-            <GoogleSyncBar
-              pangkalanList={pangkalanList}
-              uploadedDocs={uploadedDocs}
-              isAdminMode={isAdminMode}
-              onClearDummyData={handleClearDummyData}
-              onUpdatePangkalanList={(newList) => setPangkalanList(newList)}
-              pendingUnsyncedNotice={pendingUnsyncedNotice}
-              onClearPendingNotice={() => setPendingUnsyncedNotice(null)}
-            />
-          </div>
-        )}
+        <div id="google-sync-bar" className="print:hidden">
+          <GoogleSyncBar
+            pangkalanList={pangkalanList}
+            uploadedDocs={uploadedDocs}
+            isAdminMode={isAdminMode}
+            onClearDummyData={handleClearDummyData}
+            onUpdatePangkalanList={(newList) => setPangkalanList(newList)}
+            pendingUnsyncedNotice={pendingUnsyncedNotice}
+            onClearPendingNotice={() => setPendingUnsyncedNotice(null)}
+          />
+        </div>
 
         <ErrorBoundary fallbackTitle="Kendala Memuat Menu Aplikasi">
           {activeTab === 'dashboard' && (

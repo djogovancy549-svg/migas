@@ -46,7 +46,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={onGoToLauncher}
               className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-slate-950 font-black shadow-md shadow-orange-500/20 shrink-0 mt-0.5 sm:mt-0 hover:scale-105 transition cursor-pointer"
-              title="Kembali ke Halaman Launcher Utama"
+              title="Kembali ke Portal Utama"
             >
               <Flame className="w-5 h-5 sm:w-6 sm:h-6 text-slate-950 fill-slate-950" />
             </button>
@@ -135,7 +135,7 @@ export const Header: React.FC<HeaderProps> = ({
                   <LogOut className="w-3.5 h-3.5 text-slate-400" />
                   <span className="text-[11px] sm:text-xs">Keluar Agen</span>
                 </button>
-              ) : (currentUserEmail && authorizedAdminEmails.map((e) => e.toLowerCase()).includes(currentUserEmail.toLowerCase())) ? (
+              ) : !isNonAdminEmailLogged ? (
                 <button
                   onClick={onRequestAdminAuth}
                   className="inline-flex items-center justify-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-2.5 sm:px-3 py-2 rounded-xl text-xs transition cursor-pointer min-h-[38px]"
