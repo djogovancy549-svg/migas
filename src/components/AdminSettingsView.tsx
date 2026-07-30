@@ -26,7 +26,7 @@ import {
   MapPin
 } from 'lucide-react';
 import { Pangkalan, UploadedDocument, AgenCompany, HetKecamatan } from '../types';
-import { DEFAULT_ADMIN_SHEET_ID, DEFAULT_ADMIN_SHEET_URL } from '../data/pangkalanData';
+import { DEFAULT_ADMIN_SHEET_ID, DEFAULT_ADMIN_SHEET_URL, SUPER_ADMIN_EMAILS } from '../data/pangkalanData';
 import { safeLocalStorage } from '../lib/storage';
 import { exportToGoogleSheets, uploadFileToGoogleDrive } from '../lib/googleDriveSheetsService';
 
@@ -285,6 +285,14 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
 
   // Remove Admin Email
   const handleRemoveAdminEmail = (emailToRemove: string) => {
+    if (SUPER_ADMIN_EMAILS.map((e) => e.toLowerCase()).includes(emailToRemove.toLowerCase())) {
+      setNotification({
+        type: 'error',
+        message: 'Email Super Admin / Developer (djogovancy549@gmail.com / bagianekonomisdangk@gmail.com) tidak dapat dihapus.',
+      });
+      return;
+    }
+
     if (authorizedAdminEmails.length <= 1) {
       setNotification({
         type: 'error',
@@ -293,7 +301,7 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
       return;
     }
 
-    const updated = authorizedAdminEmails.filter((e) => e !== emailToRemove);
+    const updated = authorizedAdminEmails.filter((e) => e.toLowerCase() !== emailToRemove.toLowerCase());
     onUpdateAuthorizedEmails(updated);
     setNotification({
       type: 'success',
@@ -1075,9 +1083,12 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
           </div>
 
           {/* List of Authorized Admins */}
-          <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
+          <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
             {authorizedAdminEmails.map((email, idx) => {
               const isCurrentUser = currentUserEmail?.toLowerCase() === email.toLowerCase();
+              const isSuperAdminEmail = SUPER_ADMIN_EMAILS.map((e) => e.toLowerCase()).includes(email.toLowerCase());
+              const currentIsSuper = !currentUserEmail || SUPER_ADMIN_EMAILS.map((e) => e.toLowerCase()).includes(currentUserEmail.toLowerCase());
+
               return (
                 <div
                   key={idx}
@@ -1088,51 +1099,66 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
                       <Mail className="w-3.5 h-3.5" />
                     </div>
                     <div className="truncate">
-                      <p className="font-bold text-slate-200 truncate">{email}</p>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="font-bold text-slate-200 truncate">{email}</p>
+                        {isSuperAdminEmail && (
+                          <span className="text-[10px] font-bold text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                            ★ Super Admin / Developer
+                          </span>
+                        )}
+                      </div>
                       {isCurrentUser && (
-                        <span className="text-[10px] text-emerald-400 font-semibold">● Sesi Anda Sekarang</span>
+                        <span className="text-[10px] text-emerald-400 font-semibold block">● Sesi Anda Sekarang</span>
                       )}
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => handleRemoveAdminEmail(email)}
-                    className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition"
-                    title="Hapus dari daftar Admin"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  {!isSuperAdminEmail && currentIsSuper ? (
+                    <button
+                      onClick={() => handleRemoveAdminEmail(email)}
+                      className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition cursor-pointer"
+                      title="Hapus dari daftar Admin"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  ) : null}
                 </div>
               );
             })}
           </div>
 
-          {/* Form Add New Admin Email */}
-          <form onSubmit={handleAddAdminEmail} className="space-y-2 pt-2 border-t border-slate-800">
-            <label className="text-xs font-bold text-slate-300 block">Tambah Email Admin Baru:</label>
-            <div className="flex items-center gap-2">
-              <input
-                type="email"
-                value={newEmailInput}
-                onChange={(e) => setNewEmailInput(e.target.value)}
-                placeholder="misal: petugasperekonomian@gmail.com"
-                className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
-              />
-              <button
-                type="submit"
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs transition cursor-pointer shrink-0"
-              >
-                <UserPlus className="w-3.5 h-3.5" />
-                <span>Tambah</span>
-              </button>
+          {/* Form Add New Admin Email (Super Admin Only) */}
+          {(!currentUserEmail || SUPER_ADMIN_EMAILS.map((e) => e.toLowerCase()).includes(currentUserEmail.toLowerCase())) ? (
+            <form onSubmit={handleAddAdminEmail} className="space-y-2 pt-2 border-t border-slate-800">
+              <label className="text-xs font-bold text-slate-300 block">Tambah Email Admin Baru (Oleh Super Admin):</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="email"
+                  value={newEmailInput}
+                  onChange={(e) => setNewEmailInput(e.target.value)}
+                  placeholder="misal: petugasperekonomian@gmail.com"
+                  className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                />
+                <button
+                  type="submit"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs transition cursor-pointer shrink-0"
+                >
+                  <UserPlus className="w-3.5 h-3.5" />
+                  <span>Tambah</span>
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="p-3 bg-amber-950/30 border border-amber-800/50 rounded-xl text-xs text-amber-300">
+              🔒 <strong>Pengelolaan Email Admin:</strong> Hanya Super Admin (bagianekonomisdangk@gmail.com / djogovancy549@gmail.com) yang dapat menambah atau menghapus email Admin.
             </div>
-          </form>
+          )}
 
           {/* Master PIN Info (Masked by default) */}
           <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-800/80 flex items-center justify-between text-xs">
             <div className="flex items-center gap-2 text-slate-400">
               <Key className="w-4 h-4 text-amber-400 shrink-0" />
-              <span>PIN Akses Mode Admin System:</span>
+              <span>PIN Akses Mode Admin System (Super Admin):</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="font-mono font-bold text-amber-300 bg-amber-500/10 px-2.5 py-0.5 rounded border border-amber-500/20 tracking-wider">
@@ -1141,7 +1167,7 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
               <button
                 type="button"
                 onClick={() => setShowAdminPin(!showAdminPin)}
-                className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800 transition"
+                className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800 transition cursor-pointer"
                 title="Sembunyikan/Tampilkan PIN Admin"
               >
                 {showAdminPin ? <EyeOff className="w-3.5 h-3.5 text-amber-400" /> : <Eye className="w-3.5 h-3.5" />}

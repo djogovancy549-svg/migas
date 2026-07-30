@@ -1,5 +1,17 @@
 import { Pangkalan, PersyaratanStatus, AgenCompany, HetKecamatan } from '../types';
 
+// Super Admin / Developer Permanent Emails
+export const SUPER_ADMIN_EMAILS = [
+  'djogovancy549@gmail.com',
+  'bagianekonomisdangk@gmail.com',
+];
+
+export const DEFAULT_AUTHORIZED_ADMIN_EMAILS = [
+  'djogovancy549@gmail.com',
+  'bagianekonomisdangk@gmail.com',
+  'admin.perekonomian@nagekeokab.go.id',
+];
+
 // Initial pangkalan list populated with data from Admin Google Sheet
 export const INITIAL_PANGKALAN_LIST: Pangkalan[] = [];
 

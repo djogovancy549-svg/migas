@@ -27,6 +27,8 @@ interface UploadPersyaratanModalProps {
   masterRequirements: MasterRequirementItem[];
   uploadedDocs: UploadedDocument[];
   isAdminMode: boolean;
+  currentUserEmail?: string | null;
+  authorizedAdminEmails?: string[];
   onClose: () => void;
   onUploadFile: (pangkalanId: string, docKey: string, docName: string, file: File) => void;
   onDeleteFile: (docId: string) => void;
@@ -40,12 +42,19 @@ export const UploadPersyaratanModal: React.FC<UploadPersyaratanModalProps> = ({
   masterRequirements,
   uploadedDocs,
   isAdminMode,
+  currentUserEmail,
+  authorizedAdminEmails = [],
   onClose,
   onUploadFile,
   onDeleteFile,
   onUpdateStatus,
   onRequestAdminAuth
 }) => {
+  const isNonAdminEmailLogged = Boolean(
+    currentUserEmail &&
+    authorizedAdminEmails.length > 0 &&
+    !authorizedAdminEmails.map((e) => e.toLowerCase()).includes(currentUserEmail.toLowerCase())
+  );
   const [selectedPreviewDoc, setSelectedPreviewDoc] = useState<UploadedDocument | null>(null);
   const [docToDelete, setDocToDelete] = useState<UploadedDocument | null>(null);
   const [activeTabFilter, setActiveTabFilter] = useState<'semua' | 'perlu_upload' | 'terupload'>('semua');
@@ -107,7 +116,7 @@ export const UploadPersyaratanModal: React.FC<UploadPersyaratanModalProps> = ({
           </div>
 
           <div className="flex items-center gap-3">
-            {!isAdminMode && onRequestAdminAuth && (
+            {!isAdminMode && !isNonAdminEmailLogged && onRequestAdminAuth && (
               <button
                 onClick={onRequestAdminAuth}
                 className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 rounded-xl text-xs font-semibold transition cursor-pointer"

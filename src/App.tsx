@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Pangkalan, PersyaratanStatus, MasterRequirementItem, UploadedDocument, RekomendasiPerizinan, AgenCompany, HetKecamatan } from './types';
-import { INITIAL_PANGKALAN_LIST, INITIAL_CHECKLIST_STATUS, INITIAL_AGEN_LIST, INITIAL_HET_LIST, PEMDA_INFO, DEFAULT_ADMIN_SHEET_ID } from './data/pangkalanData';
+import { INITIAL_PANGKALAN_LIST, INITIAL_CHECKLIST_STATUS, INITIAL_AGEN_LIST, INITIAL_HET_LIST, PEMDA_INFO, DEFAULT_ADMIN_SHEET_ID, SUPER_ADMIN_EMAILS, DEFAULT_AUTHORIZED_ADMIN_EMAILS } from './data/pangkalanData';
 import { INITIAL_MASTER_REQUIREMENTS } from './data/masterRequirements';
 import { safeLocalStorage } from './lib/storage';
 import { initAuthListener } from './lib/googleAuth';
@@ -35,12 +35,15 @@ export default function App() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const merged = Array.from(new Set([...SUPER_ADMIN_EMAILS, ...parsed]));
+          return merged;
+        }
       } catch (e) {
         console.error('Failed to parse saved admin emails', e);
       }
     }
-    return ['djogovancy549@gmail.com', 'admin.perekonomian@nagekeokab.go.id'];
+    return DEFAULT_AUTHORIZED_ADMIN_EMAILS;
   });
 
   // Dynamic Agen Companies List state (Editable by Admin)
@@ -548,6 +551,7 @@ export default function App() {
           isAdminMode={isAdminMode}
           isAgenMode={isAgenMode}
           currentUserEmail={currentUserEmail}
+          authorizedAdminEmails={authorizedAdminEmails}
           onEnterAsCustomer={() => {
             const isAuthAdmin = currentUserEmail && authorizedAdminEmails.map((e) => e.toLowerCase()).includes(currentUserEmail.toLowerCase());
             if (!isAuthAdmin) {
@@ -613,6 +617,8 @@ export default function App() {
         totalKecamatan={totalKecamatan}
         isAdminMode={isAdminMode}
         isAgenMode={isAgenMode}
+        currentUserEmail={currentUserEmail}
+        authorizedAdminEmails={authorizedAdminEmails}
         pendingUnsyncedNotice={pendingUnsyncedNotice}
         onRequestAdminAuth={() => setAuthModalState({ isOpen: true, targetRole: 'admin' })}
         onRequestAgenAuth={() => setAuthModalState({ isOpen: true, targetRole: 'agen' })}
@@ -813,6 +819,8 @@ export default function App() {
         masterRequirements={masterRequirements}
         uploadedDocs={uploadedDocs}
         isAdminMode={isAdminMode}
+        currentUserEmail={currentUserEmail}
+        authorizedAdminEmails={authorizedAdminEmails}
         onClose={() => {
           setIsUploadModalOpen(false);
           setUploadTargetPangkalan(null);
