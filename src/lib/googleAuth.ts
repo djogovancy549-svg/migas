@@ -8,6 +8,7 @@ import {
   User,
 } from 'firebase/auth';
 import firebaseConfig from '../../firebase-applet-config.json';
+import { safeLocalStorage } from './storage';
 
 // Initialize Firebase
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
@@ -19,25 +20,22 @@ googleProvider.addScope('https://www.googleapis.com/auth/spreadsheets');
 googleProvider.addScope('https://www.googleapis.com/auth/drive.file');
 
 let isSigningIn = false;
-let cachedAccessToken: string | null = null;
+let cachedAccessToken: string | null = safeLocalStorage.getItem('sipermata_google_access_token');
 
 /**
  * Initialize Auth State listener.
  */
 export const initAuthListener = (
-  onSuccess: (user: User, token: string) => void,
+  onSuccess: (user: User, token: string | null) => void,
   onFailure: () => void
 ) => {
   return onAuthStateChanged(auth, (user) => {
     if (user) {
-      if (cachedAccessToken) {
-        onSuccess(user, cachedAccessToken);
-      } else if (!isSigningIn) {
-        // User logged in but token expired or lost in memory
-        onFailure();
-      }
+      // Always pass user details on success even if token is temporarily null
+      onSuccess(user, cachedAccessToken);
     } else {
       cachedAccessToken = null;
+      safeLocalStorage.removeItem('sipermata_google_access_token');
       onFailure();
     }
   });
@@ -58,6 +56,7 @@ export const signInWithGoogle = async (): Promise<{ user: User; accessToken: str
     }
 
     cachedAccessToken = accessToken;
+    safeLocalStorage.setItem('sipermata_google_access_token', accessToken);
     return { user: result.user, accessToken };
   } catch (error: any) {
     console.error('Google Sign-In Error:', error);
@@ -72,6 +71,7 @@ export const signInWithGoogle = async (): Promise<{ user: User; accessToken: str
  */
 export const logoutGoogle = async () => {
   cachedAccessToken = null;
+  safeLocalStorage.removeItem('sipermata_google_access_token');
   await signOut(auth);
 };
 

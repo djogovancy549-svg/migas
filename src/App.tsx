@@ -322,8 +322,25 @@ export default function App() {
     pangkalan: null,
   });
 
+  // Check if a non-admin/non-developer email is logged in
+  const isNonAdminEmailLogged = useMemo(() => {
+    return Boolean(
+      currentUserEmail &&
+      authorizedAdminEmails.length > 0 &&
+      !authorizedAdminEmails.map((e) => e.toLowerCase()).includes(currentUserEmail.toLowerCase())
+    );
+  }, [currentUserEmail, authorizedAdminEmails]);
+
+  // Filter pangkalanList for public users if a non-admin email is logged in
+  const displayedPangkalanList = useMemo(() => {
+    if (isNonAdminEmailLogged) {
+      return pangkalanList.filter((p) => p.statusPerizinan === 'Aktif');
+    }
+    return pangkalanList;
+  }, [pangkalanList, isNonAdminEmailLogged]);
+
   // Unique Kecamatan Count
-  const totalKecamatan = new Set(pangkalanList.map((p) => p.kecamatan)).size;
+  const totalKecamatan = new Set(displayedPangkalanList.map((p) => p.kecamatan)).size;
 
   // Count of pangkalan with "Disetujui & Diterbitkan" status or statusPerizinan === 'Aktif'
   const licensedPangkalanCount = useMemo(() => {
@@ -588,6 +605,10 @@ export default function App() {
           targetRole={authModalState.targetRole}
           onClose={() => setAuthModalState({ ...authModalState, isOpen: false })}
           onSuccess={() => {
+            if (isNonAdminEmailLogged) {
+              setAuthModalState({ ...authModalState, isOpen: false });
+              return;
+            }
             if (authModalState.targetRole === 'admin') {
               setIsAdminMode(true);
               setActiveTab('dashboard');
@@ -615,7 +636,7 @@ export default function App() {
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col selection:bg-amber-500 selection:text-slate-950">
       {/* App Header */}
       <Header
-        totalPangkalan={pangkalanList.length}
+        totalPangkalan={displayedPangkalanList.length}
         totalKecamatan={totalKecamatan}
         isAdminMode={isAdminMode}
         isAgenMode={isAgenMode}
@@ -634,7 +655,7 @@ export default function App() {
       <TabNavigation
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        pangkalanCount={pangkalanList.length}
+        pangkalanCount={displayedPangkalanList.length}
         isAdminMode={isAdminMode}
         isAgenMode={isAgenMode}
         licensedCount={licensedPangkalanCount}
@@ -682,22 +703,24 @@ export default function App() {
         )}
 
         {/* Google Sync & Drive Bar */}
-        <div id="google-sync-bar" className="print:hidden">
-          <GoogleSyncBar
-            pangkalanList={pangkalanList}
-            uploadedDocs={uploadedDocs}
-            isAdminMode={isAdminMode}
-            onClearDummyData={handleClearDummyData}
-            onUpdatePangkalanList={(newList) => setPangkalanList(newList)}
-            pendingUnsyncedNotice={pendingUnsyncedNotice}
-            onClearPendingNotice={() => setPendingUnsyncedNotice(null)}
-          />
-        </div>
+        {!isNonAdminEmailLogged && (
+          <div id="google-sync-bar" className="print:hidden">
+            <GoogleSyncBar
+              pangkalanList={pangkalanList}
+              uploadedDocs={uploadedDocs}
+              isAdminMode={isAdminMode}
+              onClearDummyData={handleClearDummyData}
+              onUpdatePangkalanList={(newList) => setPangkalanList(newList)}
+              pendingUnsyncedNotice={pendingUnsyncedNotice}
+              onClearPendingNotice={() => setPendingUnsyncedNotice(null)}
+            />
+          </div>
+        )}
 
         <ErrorBoundary fallbackTitle="Kendala Memuat Menu Aplikasi">
           {activeTab === 'dashboard' && (
             <DashboardView
-              pangkalanList={pangkalanList}
+              pangkalanList={displayedPangkalanList}
               onSelectPangkalanForLetter={handleSelectPangkalanForLetter}
               onGoToTab={(tab) => setActiveTab(tab)}
             />
@@ -732,7 +755,7 @@ export default function App() {
 
           {activeTab === 'surat-permohonan' && (
             <SuratPermohonanView
-              pangkalanList={pangkalanList}
+              pangkalanList={displayedPangkalanList}
               selectedPangkalan={selectedPangkalanForLetter}
               onSavePangkalan={handleSavePangkalan}
             />
@@ -740,7 +763,7 @@ export default function App() {
 
           {activeTab === 'surat-pernyataan' && (
             <SuratPernyataanView
-              pangkalanList={pangkalanList}
+              pangkalanList={displayedPangkalanList}
               selectedPangkalan={selectedPangkalanForLetter}
               hetList={hetList}
               onSavePangkalan={handleSavePangkalan}
@@ -749,7 +772,7 @@ export default function App() {
 
           {activeTab === 'persyaratan' && (
             <PersyaratanChecklistView
-              pangkalanList={pangkalanList}
+              pangkalanList={displayedPangkalanList}
               checklistData={checklistData}
               masterRequirements={masterRequirements}
               uploadedDocs={uploadedDocs}
