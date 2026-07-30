@@ -244,6 +244,20 @@ export default function App() {
     return () => unsubscribe();
   }, [authorizedAdminEmails]);
 
+  // Real-time access enforcement: force-revoke isAdminMode if the logged-in email is no longer authorized
+  useEffect(() => {
+    if (currentUserEmail) {
+      const isAuthorized = authorizedAdminEmails
+        .map((e) => e.toLowerCase().trim())
+        .includes(currentUserEmail.toLowerCase().trim());
+      if (!isAuthorized) {
+        setIsAdminMode(false);
+      } else {
+        setIsAdminMode(true);
+      }
+    }
+  }, [currentUserEmail, authorizedAdminEmails]);
+
   // Load and subscribe to authorizedAdminEmails from Firestore
   useEffect(() => {
     const docRef = doc(db, 'settings', 'admins');
