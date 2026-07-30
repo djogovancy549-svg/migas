@@ -80,30 +80,20 @@ export default function App() {
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
   const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null);
 
-  // Load initial dataset or restore from safeLocalStorage with merging
+  // Load initial dataset or restore from safeLocalStorage
   const [pangkalanList, setPangkalanList] = useState<Pangkalan[]>(() => {
-    let list: Pangkalan[] = INITIAL_PANGKALAN_LIST;
     const saved = safeLocalStorage.getItem('pne_nagekeo_pangkalan_data');
-    if (saved) {
+    if (saved !== null) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const mergedMap = new Map<string, Pangkalan>();
-          INITIAL_PANGKALAN_LIST.forEach((item) => mergedMap.set(item.id.toLowerCase(), item));
-          parsed.forEach((item: Pangkalan) => {
-            if (item && item.id) {
-              const key = item.id.toLowerCase();
-              const prev = mergedMap.get(key);
-              mergedMap.set(key, prev ? { ...prev, ...item } : item);
-            }
-          });
-          list = Array.from(mergedMap.values());
+        if (Array.isArray(parsed)) {
+          return parsed.map((item, idx) => ({ ...item, no: idx + 1 }));
         }
       } catch (e) {
         console.error('Failed to parse saved pangkalan data', e);
       }
     }
-    return list.map((item, idx) => ({ ...item, no: idx + 1 }));
+    return INITIAL_PANGKALAN_LIST;
   });
 
   const [checklistData, setChecklistData] = useState<Record<string, PersyaratanStatus>>(() => {
@@ -251,35 +241,14 @@ export default function App() {
     return () => unsubscribe();
   }, [authorizedAdminEmails]);
 
-  // Auto fetch & merge Google Sheets data on mount and when googleAccessToken is active
+  // Auto fetch Google Sheets data on mount and when googleAccessToken is active
   useEffect(() => {
     const targetSheetId = safeLocalStorage.getItem('pne_nagekeo_google_sheet_id') || DEFAULT_ADMIN_SHEET_ID;
     fetchPangkalanFromGoogleSheets(googleAccessToken, targetSheetId)
       .then((sheetItems) => {
-        if (sheetItems && sheetItems.length > 0) {
-          setPangkalanList((prev) => {
-            const mergedMap = new Map<string, Pangkalan>();
-            INITIAL_PANGKALAN_LIST.forEach((item) => mergedMap.set(item.id.toLowerCase(), item));
-            sheetItems.forEach((item) => {
-              if (item && item.id) {
-                const key = item.id.toLowerCase();
-                const existing = mergedMap.get(key);
-                mergedMap.set(key, existing ? { ...existing, ...item } : item);
-              }
-            });
-            prev.forEach((item) => {
-              if (item && item.id) {
-                const key = item.id.toLowerCase();
-                const existing = mergedMap.get(key);
-                mergedMap.set(key, existing ? { ...existing, ...item } : item);
-              }
-            });
-            const updated = Array.from(mergedMap.values()).map((p, idx) => ({ ...p, no: idx + 1 }));
-            if (JSON.stringify(prev) === JSON.stringify(updated)) {
-              return prev;
-            }
-            return updated;
-          });
+        if (sheetItems) {
+          const updated = sheetItems.map((p, idx) => ({ ...p, no: idx + 1 }));
+          setPangkalanList(updated);
         }
       })
       .catch((err) => console.error('Auto fetch Google Sheets error:', err));

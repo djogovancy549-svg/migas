@@ -1,5 +1,5 @@
 import { Pangkalan, UploadedDocument } from '../types';
-import { DEFAULT_ADMIN_SHEET_ID, DEFAULT_ADMIN_SHEET_URL, INITIAL_PANGKALAN_LIST } from '../data/pangkalanData';
+import { DEFAULT_ADMIN_SHEET_ID, DEFAULT_ADMIN_SHEET_URL } from '../data/pangkalanData';
 
 function parseRowsToPangkalan(rows: any[][]): Pangkalan[] {
   const fetchedList: Pangkalan[] = [];
@@ -128,45 +128,13 @@ export async function exportToGoogleSheets(
       spreadsheetId = createData.spreadsheetId;
     }
 
-    // 2. Read existing rows from Google Sheet first to ensure NO EXISTING DATA IS EVER DELETED/OVERWRITTEN
-    let existingSheetRows: Pangkalan[] = [];
-    if (accessToken && spreadsheetId) {
-      existingSheetRows = await fetchPangkalanFromGoogleSheets(accessToken, spreadsheetId);
-    }
-
-    // 3. Merge: Default Initial Data + Existing Google Sheet Rows + Local Pangkalan List
-    const mergedMap = new Map<string, Pangkalan>();
-
-    // Step A: Seed with default initial data (PGK-7777, PGK-6228)
-    INITIAL_PANGKALAN_LIST.forEach((item) => {
-      mergedMap.set(item.id.toLowerCase(), item);
-    });
-
-    // Step B: Add existing items from Google Sheet
-    existingSheetRows.forEach((item) => {
-      if (item.id) {
-        const key = item.id.toLowerCase();
-        const prev = mergedMap.get(key);
-        mergedMap.set(key, prev ? { ...prev, ...item } : item);
-      }
-    });
-
-    // Step C: Add/update local pangkalan entries
-    pangkalanList.forEach((item) => {
-      if (item.id) {
-        const key = item.id.toLowerCase();
-        const prev = mergedMap.get(key);
-        mergedMap.set(key, prev ? { ...prev, ...item } : item);
-      }
-    });
-
-    // Final consolidated array
-    const mergedPangkalanList = Array.from(mergedMap.values()).map((p, idx) => ({
+    // 2. Prepare exact pangkalan list to export
+    const mergedPangkalanList = pangkalanList.map((p, idx) => ({
       ...p,
       no: idx + 1,
     }));
 
-    // 4. Prepare headers and rows
+    // 3. Prepare headers and rows
     const headers = [
       'No',
       'ID Pangkalan',
@@ -194,6 +162,21 @@ export async function exportToGoogleSheets(
     ]);
 
     const values = [headers, ...rows];
+
+    // 4. Clear existing sheet rows A2:J500 first so deleted rows are wiped out completely
+    if (accessToken && spreadsheetId) {
+      try {
+        await fetch(
+          `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/A2:J500:clear`,
+          {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${accessToken}` },
+          }
+        );
+      } catch (clearErr) {
+        console.warn('Failed to clear A2:J500 before PUT:', clearErr);
+      }
+    }
 
     // 5. Update spreadsheet content safely
     const updateRes = await fetch(
