@@ -280,11 +280,11 @@ export default function App() {
         });
       }
     }, (error) => {
-      console.warn('Firestore admins sub failed (requires sign-in):', error);
+      console.warn('Firestore admins sub failed:', error);
     });
 
     return () => unsubscribe();
-  }, [currentUserEmail]);
+  }, []);
 
   // Auto fetch Google Sheets data on mount and when googleAccessToken is active
   useEffect(() => {
