@@ -311,7 +311,7 @@ export const GoogleSyncBar: React.FC<GoogleSyncBarProps> = ({
       )}
 
       {/* Action Buttons for Sheets, Drive, & Clear Dummy */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-slate-800">
+      <div className={`grid grid-cols-1 ${isAdminMode ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-2.5 pt-2 border-t border-slate-800`}>
         {/* Sync Google Sheets */}
         <button
           onClick={handleSyncSheets}
@@ -351,14 +351,16 @@ export const GoogleSyncBar: React.FC<GoogleSyncBarProps> = ({
         </button>
 
         {/* Clear All Data option */}
-        <button
-          onClick={onClearDummyData}
-          className="inline-flex items-center justify-center gap-2 bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-800/80 font-bold px-4 py-2.5 rounded-xl text-xs transition shadow cursor-pointer min-h-[44px] touch-manipulation"
-          title="Kosongkan Semua Data Pangkalan & Google Sheet (Dilindungi PIN migas2026)"
-        >
-          <Trash2 className="w-4 h-4 text-rose-400" />
-          <span>Kosongkan Semua Data (Wipe)</span>
-        </button>
+        {isAdminMode && (
+          <button
+            onClick={onClearDummyData}
+            className="inline-flex items-center justify-center gap-2 bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-800/80 font-bold px-4 py-2.5 rounded-xl text-xs transition shadow cursor-pointer min-h-[44px] touch-manipulation"
+            title="Kosongkan Semua Data Pangkalan & Google Sheet (Dilindungi PIN migas2026)"
+          >
+            <Trash2 className="w-4 h-4 text-rose-400" />
+            <span>Kosongkan Semua Data (Wipe)</span>
+          </button>
+        )}
       </div>
 
       {/* Active Central Admin Spreadsheet Banner */}

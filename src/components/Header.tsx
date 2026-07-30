@@ -110,10 +110,10 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={onGoToLauncher}
                 className="inline-flex items-center justify-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold px-2.5 sm:px-3 py-2 rounded-xl text-xs transition cursor-pointer min-h-[38px]"
-                title="Kembali ke Launcher Portal"
+                title="Kembali ke Portal Utama"
               >
                 <Home className="w-3.5 h-3.5 text-amber-400" />
-                <span className="text-[11px] sm:text-xs">Launcher</span>
+                <span className="text-[11px] sm:text-xs">Kembali ke Portal Utama</span>
               </button>
 
               {/* Admin Switcher Button */}
@@ -135,7 +135,7 @@ export const Header: React.FC<HeaderProps> = ({
                   <LogOut className="w-3.5 h-3.5 text-slate-400" />
                   <span className="text-[11px] sm:text-xs">Keluar Agen</span>
                 </button>
-              ) : !isNonAdminEmailLogged ? (
+              ) : (currentUserEmail && authorizedAdminEmails.map((e) => e.toLowerCase()).includes(currentUserEmail.toLowerCase())) ? (
                 <button
                   onClick={onRequestAdminAuth}
                   className="inline-flex items-center justify-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-2.5 sm:px-3 py-2 rounded-xl text-xs transition cursor-pointer min-h-[38px]"
