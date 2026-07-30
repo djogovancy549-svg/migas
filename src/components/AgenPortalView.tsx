@@ -39,11 +39,13 @@ export const AgenPortalView: React.FC<AgenPortalViewProps> = ({
   const [selectedKecamatan, setSelectedKecamatan] = useState<string>('ALL');
   const [selectedAgenFilter, setSelectedAgenFilter] = useState<string>('ALL');
 
-  // ONLY pangkalan that have approved & issued recommendation ("yang sudah berijin saja")
+  // ONLY pangkalan that have approved & issued recommendation or active status ("yang sudah berijin saja")
   const licensedPangkalanList = useMemo(() => {
     return pangkalanList.filter((p) => {
       const rek = rekomendasiMap[p.id];
-      return rek && rek.status === 'Disetujui & Diterbitkan';
+      const hasRek = rek && rek.status === 'Disetujui & Diterbitkan';
+      const isAktif = p.statusPerizinan === 'Aktif';
+      return hasRek || isAktif;
     });
   }, [pangkalanList, rekomendasiMap]);
 

@@ -92,33 +92,18 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
     },
   ];
 
-  // Tabs for Agen Mode
+  // Tabs for Agen Mode - Hanya memunculkan nama pangkalan yang telah memiliki ijin dan data informasi itu saja
   const agenTabs: TabItem[] = [
     {
       id: 'portal-agen',
-      label: 'Portal Agen (Pangkalan Berizin)',
+      label: 'Daftar Pangkalan Berizin Resmi',
       icon: Building2,
       badge: licensedCount,
     },
     {
       id: 'dashboard',
-      label: 'Dashboard & Informasi',
+      label: 'Informasi & Statistik Kuota',
       icon: LayoutDashboard,
-    },
-    {
-      id: 'persyaratan',
-      label: 'Verifikasi Syarat Dokumen',
-      icon: ClipboardCheck,
-    },
-    {
-      id: 'surat-permohonan',
-      label: 'Cetak Surat Permohonan',
-      icon: FileText,
-    },
-    {
-      id: 'surat-pernyataan',
-      label: 'Cetak Surat Pernyataan',
-      icon: Award,
     },
   ];
 

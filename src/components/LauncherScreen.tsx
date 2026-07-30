@@ -293,8 +293,18 @@ export const LauncherScreen: React.FC<LauncherScreenProps> = ({
                 </div>
               </div>
 
-              <div className="p-3 bg-slate-950/80 rounded-xl border border-slate-800 text-slate-400 text-xs">
-                Akses Portal Admin khusus untuk email pejabat/petugas terdaftar (Super Admin: bagianekonomisdangk@gmail.com / djogovancy549@gmail.com).
+              <div className="space-y-3">
+                <div className="p-3 bg-slate-950/80 rounded-xl border border-slate-800 text-slate-400 text-xs">
+                  Akses Portal Admin khusus untuk email pejabat/petugas terdaftar (Super Admin: bagianekonomisdangk@gmail.com / djogovancy549@gmail.com).
+                </div>
+                <button
+                  type="button"
+                  disabled
+                  className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 bg-slate-800/80 text-slate-500 font-bold rounded-xl text-xs cursor-not-allowed border border-slate-700/60"
+                >
+                  <Lock className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Tombol Non-Aktif (Email Tidak Terdaftar)</span>
+                </button>
               </div>
             </div>
           )}

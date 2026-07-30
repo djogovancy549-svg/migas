@@ -325,11 +325,13 @@ export default function App() {
   // Unique Kecamatan Count
   const totalKecamatan = new Set(pangkalanList.map((p) => p.kecamatan)).size;
 
-  // Count of pangkalan with "Disetujui & Diterbitkan" status
+  // Count of pangkalan with "Disetujui & Diterbitkan" status or statusPerizinan === 'Aktif'
   const licensedPangkalanCount = useMemo(() => {
     return pangkalanList.filter((p) => {
       const rek = rekomendasiMap[p.id];
-      return rek && rek.status === 'Disetujui & Diterbitkan';
+      const hasRek = rek && rek.status === 'Disetujui & Diterbitkan';
+      const isAktif = p.statusPerizinan === 'Aktif';
+      return hasRek || isAktif;
     }).length;
   }, [pangkalanList, rekomendasiMap]);
 
