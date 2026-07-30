@@ -116,7 +116,7 @@ export const UploadPersyaratanModal: React.FC<UploadPersyaratanModalProps> = ({
           </div>
 
           <div className="flex items-center gap-3">
-            {!isAdminMode && !isNonAdminEmailLogged && onRequestAdminAuth && (
+            {!isAdminMode && onRequestAdminAuth && (
               <button
                 onClick={onRequestAdminAuth}
                 className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 rounded-xl text-xs font-semibold transition cursor-pointer"

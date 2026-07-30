@@ -1,17 +1,21 @@
 import React from 'react';
 import { Pangkalan } from '../types';
-import { Building2, MapPin, Fuel, FileCheck, FileWarning, ArrowRight, CheckCircle2, Award, FileText } from 'lucide-react';
+import { Building2, MapPin, Fuel, FileCheck, FileWarning, ArrowRight, CheckCircle2, Award, FileText, Bell, Check } from 'lucide-react';
 
 interface DashboardViewProps {
   pangkalanList: Pangkalan[];
   onSelectPangkalanForLetter: (pangkalan: Pangkalan, letterType: 'permohonan' | 'pernyataan') => void;
   onGoToTab: (tab: 'pangkalan' | 'surat-permohonan' | 'surat-pernyataan' | 'persyaratan') => void;
+  isAdminMode?: boolean;
+  onApprovePangkalan?: (id: string) => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
   pangkalanList,
   onSelectPangkalanForLetter,
   onGoToTab,
+  isAdminMode = false,
+  onApprovePangkalan,
 }) => {
   // Aggregate by Kecamatan
   const kecamatanCounts = pangkalanList.reduce((acc, p) => {
@@ -35,9 +39,63 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   const perizinanAktif = pangkalanList.filter(p => p.statusPerizinan === 'Aktif').length;
   const perizinanPerluPerpanjangan = pangkalanList.filter(p => p.statusPerizinan === 'Perlu Perpanjangan').length;
+  const pendingPangkalan = pangkalanList.filter(p => p.statusPerizinan === 'Proses');
 
   return (
     <div className="space-y-6">
+      {/* Pending Approvals Notification Panel */}
+      {isAdminMode && pendingPangkalan.length > 0 && (
+        <div className="bg-slate-900 border-2 border-amber-500/30 rounded-2xl p-5 shadow-xl space-y-4 relative overflow-hidden">
+          <div className="absolute right-0 top-0 bg-amber-500/5 w-40 h-40 rounded-full blur-2xl pointer-events-none" />
+          <div className="flex items-start gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+              <Bell className="w-5 h-5 animate-bounce" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-base font-extrabold text-amber-400">
+                Pemberitahuan Admin: Ada {pendingPangkalan.length} Pengajuan Pangkalan Baru!
+              </h3>
+              <p className="text-xs text-slate-300">
+                Terdapat pangkalan baru yang baru saja diinput/didaftarkan oleh pemohon/agen dan sedang menunggu persetujuan Anda agar statusnya menjadi Aktif.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
+            {pendingPangkalan.map((p) => (
+              <div key={p.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-slate-950 p-3.5 rounded-xl border border-slate-800 hover:border-slate-700 transition">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-white">{p.nama}</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                      ID: {p.id}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    {p.alamat}, Kel. {p.kelurahan}, Kec. {p.kecamatan}
+                  </p>
+                  {p.nomorHp && (
+                    <p className="text-[11px] text-slate-400">
+                      Kontak: <strong className="text-slate-300">{p.nomorHp}</strong>
+                    </p>
+                  )}
+                </div>
+
+                {onApprovePangkalan && (
+                  <button
+                    onClick={() => onApprovePangkalan(p.id)}
+                    className="inline-flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold px-3 py-2 rounded-xl text-xs transition cursor-pointer shadow-md min-h-[38px] touch-manipulation"
+                  >
+                    <Check className="w-3.5 h-3.5 stroke-[3]" />
+                    <span>Terima Pengajuan</span>
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Top Welcome & Agency Banner */}
       <div className="bg-gradient-to-r from-amber-600 via-orange-600 to-slate-900 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
         <div className="absolute -right-10 -bottom-10 w-60 h-60 bg-white/5 rounded-full blur-2xl pointer-events-none" />

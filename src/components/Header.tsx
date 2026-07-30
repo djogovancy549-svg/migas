@@ -135,7 +135,7 @@ export const Header: React.FC<HeaderProps> = ({
                   <LogOut className="w-3.5 h-3.5 text-slate-400" />
                   <span className="text-[11px] sm:text-xs">Keluar Agen</span>
                 </button>
-              ) : !isNonAdminEmailLogged ? (
+              ) : (
                 <button
                   onClick={onRequestAdminAuth}
                   className="inline-flex items-center justify-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-2.5 sm:px-3 py-2 rounded-xl text-xs transition cursor-pointer min-h-[38px]"
@@ -144,7 +144,7 @@ export const Header: React.FC<HeaderProps> = ({
                   <Lock className="w-3.5 h-3.5" />
                   <span className="text-[11px] sm:text-xs">Masuk Admin</span>
                 </button>
-              ) : null}
+              )}
 
               {/* Quick Print Summary */}
               <button

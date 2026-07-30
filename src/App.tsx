@@ -399,17 +399,44 @@ export default function App() {
   };
 
   const handleSavePangkalan = (savedPangkalan: Pangkalan) => {
+    let pangkalanToSave = { ...savedPangkalan };
+    
+    const isUserAdmin = Boolean(
+      currentUserEmail &&
+      authorizedAdminEmails.length > 0 &&
+      authorizedAdminEmails.map((e) => e.toLowerCase()).includes(currentUserEmail.toLowerCase())
+    );
+    
+    // If not an authorized admin, force statusPerizinan to 'Proses' for newly created pangkalan
+    if (!isUserAdmin) {
+      const exists = pangkalanList.some((p) => p.id === savedPangkalan.id);
+      if (!exists) {
+        pangkalanToSave.statusPerizinan = 'Proses';
+      }
+    }
+
     setPangkalanList((prev) => {
-      const exists = prev.some((p) => p.id === savedPangkalan.id);
+      const exists = prev.some((p) => p.id === pangkalanToSave.id);
       if (exists) {
-        return prev.map((p) => (p.id === savedPangkalan.id ? savedPangkalan : p));
+        return prev.map((p) => (p.id === pangkalanToSave.id ? pangkalanToSave : p));
       } else {
-        return [savedPangkalan, ...prev];
+        return [pangkalanToSave, ...prev];
       }
     });
 
     setPendingUnsyncedNotice(
-      `Pangkalan "${savedPangkalan.nama}" (${savedPangkalan.id}) telah diinput/diperbarui! Mohon tekan tombol 'Simpan ke Google Sheet' di Google Sync Bar agar data ini tersimpan secara permanen di Cloud Google Sheet Admin.`
+      `Pangkalan "${pangkalanToSave.nama}" (${pangkalanToSave.id}) telah diinput/diperbarui! Mohon tekan tombol 'Simpan ke Google Sheet' di Google Sync Bar agar data ini tersimpan secara permanen di Cloud Google Sheet Admin.`
+    );
+  };
+
+  const handleApprovePangkalan = (id: string) => {
+    setPangkalanList((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, statusPerizinan: 'Aktif' } : p))
+    );
+    const approvedPangkalan = pangkalanList.find((p) => p.id === id);
+    const pangkalanName = approvedPangkalan?.nama || id;
+    setPendingUnsyncedNotice(
+      `Pangkalan "${pangkalanName}" (${id}) telah disetujui & diaktifkan! Mohon tekan tombol 'Simpan ke Google Sheet' di Google Sync Bar agar perubahan tersimpan di Cloud.`
     );
   };
 
@@ -721,6 +748,8 @@ export default function App() {
               pangkalanList={displayedPangkalanList}
               onSelectPangkalanForLetter={handleSelectPangkalanForLetter}
               onGoToTab={(tab) => setActiveTab(tab)}
+              isAdminMode={isAdminMode}
+              onApprovePangkalan={handleApprovePangkalan}
             />
           )}
 
@@ -830,6 +859,7 @@ export default function App() {
         mode={modalState.mode}
         pangkalan={modalState.pangkalan}
         agenList={agenList}
+        isAdminMode={isAdminMode}
         onClose={() => setModalState({ ...modalState, isOpen: false })}
         onSave={handleSavePangkalan}
         onSelectForLetter={handleSelectPangkalanForLetter}

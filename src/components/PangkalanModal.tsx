@@ -7,6 +7,7 @@ interface PangkalanModalProps {
   mode: 'add' | 'edit' | 'detail';
   pangkalan?: Pangkalan | null;
   agenList?: AgenCompany[];
+  isAdminMode?: boolean;
   onClose: () => void;
   onSave: (pangkalan: Pangkalan) => void;
   onSelectForLetter?: (pangkalan: Pangkalan, letterType: 'permohonan' | 'pernyataan') => void;
@@ -17,6 +18,7 @@ export const PangkalanModal: React.FC<PangkalanModalProps> = ({
   mode,
   pangkalan,
   agenList = [],
+  isAdminMode = false,
   onClose,
   onSave,
   onSelectForLetter,
@@ -91,6 +93,17 @@ export const PangkalanModal: React.FC<PangkalanModalProps> = ({
               <div>
                 <span className="font-mono font-bold text-amber-300 text-sm bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 rounded">
                   ID: {formData.id}
+                </span>
+                <span className={`ml-2 text-xs font-bold px-2 py-0.5 rounded border ${
+                  formData.statusPerizinan === 'Aktif'
+                    ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                    : formData.statusPerizinan === 'Proses'
+                    ? 'bg-amber-500/15 text-amber-400 border-amber-500/30 font-extrabold animate-pulse'
+                    : formData.statusPerizinan === 'Perlu Perpanjangan'
+                    ? 'bg-orange-500/15 text-orange-400 border-orange-500/30 font-semibold'
+                    : 'bg-rose-500/15 text-rose-400 border-rose-500/30'
+                }`}>
+                  {formData.statusPerizinan || 'Aktif'}
                 </span>
                 <h2 className="text-lg font-black text-white mt-1.5">{formData.nama}</h2>
                 <p className="text-slate-400 flex items-center gap-1 mt-0.5">
@@ -268,6 +281,22 @@ export const PangkalanModal: React.FC<PangkalanModalProps> = ({
                   ))}
                 </select>
               </div>
+
+              {isAdminMode && (
+                <div>
+                  <label className="block font-semibold text-slate-300 mb-1">Status Perizinan:</label>
+                  <select
+                    value={formData.statusPerizinan || 'Aktif'}
+                    onChange={(e) => setFormData({ ...formData, statusPerizinan: e.target.value as any })}
+                    className="w-full p-2 border border-slate-800 rounded-xl font-bold bg-slate-950 text-amber-400"
+                  >
+                    <option value="Aktif">Aktif</option>
+                    <option value="Proses">Proses (Menunggu Verifikasi)</option>
+                    <option value="Perlu Perpanjangan">Perlu Perpanjangan</option>
+                    <option value="Belum Lengkap">Belum Lengkap</option>
+                  </select>
+                </div>
+              )}
             </div>
 
             {/* Actions */}
