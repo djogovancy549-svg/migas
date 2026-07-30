@@ -10,7 +10,6 @@ export const DEFAULT_AUTHORIZED_ADMIN_EMAILS = [
   'djogovancy549@gmail.com',
   'bagianekonomisdangk@gmail.com',
   'admin.perekonomian@nagekeokab.go.id',
-  'bidangplp71@gmail.com',
 ];
 
 // Initial pangkalan list populated with data from Admin Google Sheet
