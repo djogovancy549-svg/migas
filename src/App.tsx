@@ -4,7 +4,8 @@ import { INITIAL_PANGKALAN_LIST, INITIAL_CHECKLIST_STATUS, INITIAL_AGEN_LIST, IN
 import { INITIAL_MASTER_REQUIREMENTS } from './data/masterRequirements';
 import { safeLocalStorage } from './lib/storage';
 import { initAuthListener } from './lib/googleAuth';
-import { fetchPangkalanFromGoogleSheets } from './lib/googleDriveSheetsService';
+import { fetchPangkalanFromGoogleSheets, clearGoogleSheets } from './lib/googleDriveSheetsService';
+import { getCachedAccessToken } from './lib/googleAuth';
 import { BellRing, X, FileSpreadsheet } from 'lucide-react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Header } from './components/Header';
@@ -22,6 +23,7 @@ import { PangkalanModal } from './components/PangkalanModal';
 import { AdminPinModal } from './components/AdminPinModal';
 import { UploadPersyaratanModal } from './components/UploadPersyaratanModal';
 import { RekomendasiModal } from './components/RekomendasiModal';
+import { DeletePinModal } from './components/DeletePinModal';
 
 export default function App() {
   // Launcher screen toggle state
@@ -210,6 +212,9 @@ export default function App() {
   const [isRekomendasiModalOpen, setIsRekomendasiModalOpen] = useState<boolean>(false);
   const [rekomendasiTargetPangkalan, setRekomendasiTargetPangkalan] = useState<Pangkalan | null>(null);
 
+  // Clear All Data Modal State
+  const [isClearAllModalOpen, setIsClearAllModalOpen] = useState<boolean>(false);
+
   // Unsynced data notice for Admin & Users
   const [pendingUnsyncedNotice, setPendingUnsyncedNotice] = useState<string | null>(() => {
     return safeLocalStorage.getItem('pne_nagekeo_pending_unsynced_notice') || null;
@@ -365,18 +370,30 @@ export default function App() {
     return map;
   }, [uploadedDocs]);
 
-  // Clear dummy data handler
+  // Clear dummy data handler with PIN protection
   const handleClearDummyData = () => {
-    if (window.confirm('Apakah Anda yakin ingin menghapus semua data pangkalan dummy? Data akan dikosongkan.')) {
-      setPangkalanList([]);
-      setChecklistData({});
-      setUploadedDocs([]);
-      setRekomendasiMap({});
-      safeLocalStorage.removeItem('pne_nagekeo_pangkalan_data');
-      safeLocalStorage.removeItem('pne_nagekeo_checklist_data');
-      safeLocalStorage.removeItem('pne_nagekeo_uploaded_docs');
-      safeLocalStorage.removeItem('sipermata_rekomendasi_map');
+    setIsClearAllModalOpen(true);
+  };
+
+  const handleConfirmClearAllData = async () => {
+    setPangkalanList([]);
+    setChecklistData({});
+    setUploadedDocs([]);
+    setRekomendasiMap({});
+    safeLocalStorage.removeItem('pne_nagekeo_pangkalan_data');
+    safeLocalStorage.removeItem('pne_nagekeo_checklist_data');
+    safeLocalStorage.removeItem('pne_nagekeo_uploaded_docs');
+    safeLocalStorage.removeItem('sipermata_rekomendasi_map');
+
+    // Wipe Google Sheet if connected
+    const activeToken = getCachedAccessToken();
+    const activeSheetId = safeLocalStorage.getItem('pne_nagekeo_google_sheet_id') || DEFAULT_ADMIN_SHEET_ID;
+    if (activeToken && activeSheetId) {
+      await clearGoogleSheets(activeToken, activeSheetId);
     }
+
+    setPendingUnsyncedNotice(null);
+    alert('✅ Seluruh data pangkalan dan file berhasil dikosongkan (termasuk di Google Sheet Admin Pusat)!');
   };
 
   // Handlers
@@ -873,6 +890,17 @@ export default function App() {
           setAuthModalState({ ...authModalState, isOpen: false });
           setIsLauncherActive(false);
         }}
+      />
+
+      {/* Clear All Data PIN Confirmation Modal */}
+      <DeletePinModal
+        isOpen={isClearAllModalOpen}
+        title="Kosongkan Semua Data & Clear Google Sheet"
+        description="Apakah Anda yakin ingin menghapus sekaligus seluruh data pangkalan, berkas dokumen, serta mengosongkan baris Google Sheet Admin Pusat?"
+        itemDetails={`Total Data Aktif: ${pangkalanList.length} Pangkalan, ${uploadedDocs.length} Berkas`}
+        isBulkClear={true}
+        onClose={() => setIsClearAllModalOpen(false)}
+        onConfirm={handleConfirmClearAllData}
       />
     </div>
   );

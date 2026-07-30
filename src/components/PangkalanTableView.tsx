@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Pangkalan, RekomendasiPerizinan } from '../types';
 import { Search, Filter, Download, Plus, FileText, Award, Eye, Edit, Trash2, MapPin, Building, ChevronLeft, ChevronRight, Upload, Paperclip, Store, FolderCheck, FolderX, FolderOpen, CheckCircle2, BellRing, FileSpreadsheet } from 'lucide-react';
+import { DeletePinModal } from './DeletePinModal';
 
 interface PangkalanTableViewProps {
   pangkalanList: Pangkalan[];
@@ -34,6 +35,7 @@ export const PangkalanTableView: React.FC<PangkalanTableViewProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedKecamatan, setSelectedKecamatan] = useState<string>('ALL');
   const [currentPage, setCurrentPage] = useState(1);
+  const [pangkalanToDelete, setPangkalanToDelete] = useState<Pangkalan | null>(null);
   const itemsPerPage = 15;
 
   // Unique Kecamatan List
@@ -325,13 +327,9 @@ export const PangkalanTableView: React.FC<PangkalanTableViewProps> = ({
                                 <Edit className="w-4 h-4" />
                               </button>
                               <button
-                                onClick={() => {
-                                  if (confirm(`Apakah Anda yakin ingin menghapus pangkalan ${p.nama} (${p.id})?`)) {
-                                    onDeletePangkalan(p.id);
-                                  }
-                                }}
+                                onClick={() => setPangkalanToDelete(p)}
                                 className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-lg transition cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center"
-                                title="Hapus"
+                                title="Hapus Data (Dilindungi PIN)"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -373,6 +371,22 @@ export const PangkalanTableView: React.FC<PangkalanTableViewProps> = ({
           </>
         )}
       </div>
+
+      {/* Delete Confirmation PIN Modal */}
+      <DeletePinModal
+        isOpen={!!pangkalanToDelete}
+        title="Konfirmasi Hapus Data Pangkalan"
+        description="Apakah Anda yakin ingin menghapus data pangkalan berikut? Masukkan PIN Administrator migas2026 untuk melanjutkan."
+        itemDetails={pangkalanToDelete ? `${pangkalanToDelete.nama} (ID: ${pangkalanToDelete.id}) - ${pangkalanToDelete.kecamatan}` : ''}
+        isBulkClear={false}
+        onClose={() => setPangkalanToDelete(null)}
+        onConfirm={() => {
+          if (pangkalanToDelete) {
+            onDeletePangkalan(pangkalanToDelete.id);
+            setPangkalanToDelete(null);
+          }
+        }}
+      />
     </div>
   );
 };

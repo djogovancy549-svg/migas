@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { DeletePinModal } from './DeletePinModal';
 import {
   X,
   Upload,
@@ -46,6 +47,7 @@ export const UploadPersyaratanModal: React.FC<UploadPersyaratanModalProps> = ({
   onRequestAdminAuth
 }) => {
   const [selectedPreviewDoc, setSelectedPreviewDoc] = useState<UploadedDocument | null>(null);
+  const [docToDelete, setDocToDelete] = useState<UploadedDocument | null>(null);
   const [activeTabFilter, setActiveTabFilter] = useState<'semua' | 'perlu_upload' | 'terupload'>('semua');
   const [adminNoteInput, setAdminNoteInput] = useState<{ [docId: string]: string }>({});
 
@@ -272,9 +274,9 @@ export const UploadPersyaratanModal: React.FC<UploadPersyaratanModalProps> = ({
 
                                 {/* Delete Button */}
                                 <button
-                                  onClick={() => onDeleteFile(doc.id)}
+                                  onClick={() => setDocToDelete(doc)}
                                   className="p-1.5 text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 rounded-lg transition cursor-pointer"
-                                  title="Hapus File"
+                                  title="Hapus File (Dilindungi PIN)"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
@@ -448,6 +450,22 @@ export const UploadPersyaratanModal: React.FC<UploadPersyaratanModalProps> = ({
           </div>
         </div>
       )}
+
+      {/* Delete File PIN Modal */}
+      <DeletePinModal
+        isOpen={!!docToDelete}
+        title="Konfirmasi Hapus Berkas Persyaratan"
+        description="Apakah Anda yakin ingin menghapus berkas dokumen berikut ini? Masukkan PIN Administrator migas2026 untuk melanjutkan."
+        itemDetails={docToDelete ? `Dokumen: ${docToDelete.documentName} (${docToDelete.fileName})` : ''}
+        isBulkClear={false}
+        onClose={() => setDocToDelete(null)}
+        onConfirm={() => {
+          if (docToDelete) {
+            onDeleteFile(docToDelete.id);
+            setDocToDelete(null);
+          }
+        }}
+      />
     </div>
   );
 };

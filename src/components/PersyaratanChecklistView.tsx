@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Pangkalan, PersyaratanStatus, JenisPermohonan, MasterRequirementItem, UploadedDocument, RekomendasiPerizinan } from '../types';
 import { ClipboardCheck, CheckCircle2, XCircle, AlertCircle, Building2, User, Search, Printer, ShieldAlert, Upload, Plus, Trash2, FileText, Lock, ShieldCheck, FolderCheck, FolderX, FolderOpen, Award, ArrowRight } from 'lucide-react';
+import { DeletePinModal } from './DeletePinModal';
 
 interface PersyaratanChecklistViewProps {
   pangkalanList: Pangkalan[];
@@ -41,6 +42,7 @@ export const PersyaratanChecklistView: React.FC<PersyaratanChecklistViewProps> =
   );
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddReqForm, setShowAddReqForm] = useState(false);
+  const [reqToDelete, setReqToDelete] = useState<MasterRequirementItem | null>(null);
 
   // Form for adding new master requirement
   const [newReqLabel, setNewReqLabel] = useState('');
@@ -534,9 +536,9 @@ export const PersyaratanChecklistView: React.FC<PersyaratanChecklistViewProps> =
 
                           {isAdminMode && item.addedByAdmin && (
                             <button
-                              onClick={() => onDeleteMasterRequirement(item.key)}
+                              onClick={() => setReqToDelete(item)}
                               className="p-1 text-red-400 hover:bg-red-500/20 rounded cursor-pointer"
-                              title="Hapus Persyaratan Custom"
+                              title="Hapus Persyaratan Custom (Dilindungi PIN)"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -551,6 +553,22 @@ export const PersyaratanChecklistView: React.FC<PersyaratanChecklistViewProps> =
           )}
         </div>
       </div>
+
+      {/* Delete Requirement PIN Modal */}
+      <DeletePinModal
+        isOpen={!!reqToDelete}
+        title="Konfirmasi Hapus Item Persyaratan"
+        description="Apakah Anda yakin ingin menghapus item persyaratan berikut? Masukkan PIN Administrator migas2026 untuk melanjutkan."
+        itemDetails={reqToDelete ? `Persyaratan Custom: ${reqToDelete.label}` : ''}
+        isBulkClear={false}
+        onClose={() => setReqToDelete(null)}
+        onConfirm={() => {
+          if (reqToDelete) {
+            onDeleteMasterRequirement(reqToDelete.key);
+            setReqToDelete(null);
+          }
+        }}
+      />
     </div>
   );
 };

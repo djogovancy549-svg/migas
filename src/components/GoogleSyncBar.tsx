@@ -350,13 +350,14 @@ export const GoogleSyncBar: React.FC<GoogleSyncBarProps> = ({
           <span>{isSyncingDrive ? 'Mengunggah...' : `Upload Berkas ke Drive (${uploadedDocs.length})`}</span>
         </button>
 
-        {/* Clear Dummy Data option */}
+        {/* Clear All Data option */}
         <button
           onClick={onClearDummyData}
-          className="inline-flex items-center justify-center gap-2 bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-800/80 font-bold px-4 py-2.5 rounded-xl text-xs transition shadow cursor-pointer min-h-[44px]"
+          className="inline-flex items-center justify-center gap-2 bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-800/80 font-bold px-4 py-2.5 rounded-xl text-xs transition shadow cursor-pointer min-h-[44px] touch-manipulation"
+          title="Kosongkan Semua Data Pangkalan & Google Sheet (Dilindungi PIN migas2026)"
         >
           <Trash2 className="w-4 h-4 text-rose-400" />
-          <span>Hapus Data Dummy</span>
+          <span>Kosongkan Semua Data (Wipe)</span>
         </button>
       </div>
 
@@ -368,19 +369,21 @@ export const GoogleSyncBar: React.FC<GoogleSyncBarProps> = ({
             <div className="truncate">
               <span className="font-bold text-white block truncate">Google Sheet Admin Pusat Terhubung</span>
               <span className="text-[10px] text-emerald-300/80 font-mono block truncate">
-                ID: {sheetId} • Semua data pangkalan tersimpan ke Sheet Admin ini
+                ID: {sheetId} • Sync Otomatis Cloud Google Drive
               </span>
             </div>
           </div>
-          <a
-            href={sheetUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-3 py-1.5 rounded-lg text-[11px] font-extrabold transition shrink-0 self-end sm:self-auto shadow"
-          >
-            <span>Buka Google Sheet Admin</span>
-            <ExternalLink className="w-3.5 h-3.5" />
-          </a>
+          {isAdminMode && (
+            <a
+              href={sheetUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-3 py-1.5 rounded-lg text-[11px] font-extrabold transition shrink-0 self-end sm:self-auto shadow cursor-pointer touch-manipulation"
+            >
+              <span>Buka Google Sheet Admin</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          )}
         </div>
       ) : (
         <div className="flex items-center justify-between bg-amber-950/40 border border-amber-800/50 p-3 rounded-xl text-xs text-amber-300">

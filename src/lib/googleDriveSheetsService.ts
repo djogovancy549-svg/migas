@@ -227,6 +227,58 @@ export async function exportToGoogleSheets(
 }
 
 /**
+ * Clear/Wipe all rows in Google Sheet (A2:J500)
+ */
+export async function clearGoogleSheets(
+  accessToken: string,
+  spreadsheetId: string = DEFAULT_ADMIN_SHEET_ID
+): Promise<boolean> {
+  try {
+    if (!accessToken || !spreadsheetId) return false;
+
+    // Clear data rows A2:J500
+    const clearRes = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/A2:J500:clear`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }
+    );
+
+    // Reset Header Row A1:J1
+    const headers = [
+      'No',
+      'ID Pangkalan',
+      'Nama Pemilik / Pangkalan',
+      'Alamat',
+      'Kelurahan/Desa',
+      'Kecamatan',
+      'Kabupaten',
+      'Provinsi',
+      'Kuota Harian (Liter)',
+      'Status Perizinan',
+    ];
+
+    await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/A1:J1?valueInputOption=USER_ENTERED`,
+      {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ values: [headers] }),
+      }
+    );
+
+    return clearRes.ok;
+  } catch (err) {
+    console.warn('clearGoogleSheets warning:', err);
+    return false;
+  }
+}
+
+/**
  * Ensure Drive Folder exists or create one
  */
 async function getOrCreateDriveFolder(accessToken: string, folderName: string): Promise<string> {
