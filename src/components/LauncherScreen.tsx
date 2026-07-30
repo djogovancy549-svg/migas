@@ -166,57 +166,95 @@ export const LauncherScreen: React.FC<LauncherScreenProps> = ({
           </div>
 
           {/* Card 2: Portal Agen Penyalur Resmi */}
-          <div
-            onClick={isAgenMode ? onEnterAsAgen : onRequestAgenAuth}
-            className="group relative bg-slate-900/90 hover:bg-slate-900 border-2 border-slate-800 hover:border-blue-500/60 rounded-3xl p-6 transition-all duration-300 shadow-xl hover:shadow-2xl hover:shadow-blue-500/10 cursor-pointer flex flex-col justify-between space-y-5 transform hover:-translate-y-1"
-          >
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500/20 to-teal-500/20 text-blue-400 border border-blue-500/30 flex items-center justify-center shrink-0 group-hover:scale-110 transition duration-300">
-                  <Building2 className="w-6 h-6" />
+          {!isNonAdminEmailLogged ? (
+            <div
+              onClick={isAgenMode ? onEnterAsAgen : onRequestAgenAuth}
+              className="group relative bg-slate-900/90 hover:bg-slate-900 border-2 border-slate-800 hover:border-blue-500/60 rounded-3xl p-6 transition-all duration-300 shadow-xl hover:shadow-2xl hover:shadow-blue-500/10 cursor-pointer flex flex-col justify-between space-y-5 transform hover:-translate-y-1"
+            >
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500/20 to-teal-500/20 text-blue-400 border border-blue-500/30 flex items-center justify-center shrink-0 group-hover:scale-110 transition duration-300">
+                    <Building2 className="w-6 h-6" />
+                  </div>
+                  <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 flex items-center gap-1">
+                    <Lock className="w-3 h-3 text-blue-400" />
+                    {isAgenMode ? 'Terverifikasi' : 'PIN Terproteksi'}
+                  </span>
                 </div>
-                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 flex items-center gap-1">
-                  <Lock className="w-3 h-3 text-blue-400" />
-                  {isAgenMode ? 'Terverifikasi' : 'PIN Terproteksi'}
-                </span>
+
+                <div className="space-y-1">
+                  <h2 className="text-lg font-black text-white group-hover:text-blue-400 transition">
+                    2. Portal Agen Penyalur Resmi
+                  </h2>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Khusus Perusahaan Agen Penyalur Minyak Tanah Resmi (Menampilkan data pangkalan yang sudah berizin).
+                  </p>
+                </div>
+
+                {/* Feature Checklist */}
+                <ul className="space-y-2 pt-2 border-t border-slate-800 text-xs text-slate-300">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-blue-400 shrink-0" />
+                    <span>Daftar Pangkalan Berizin Disetujui</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Fuel className="w-4 h-4 text-blue-400 shrink-0" />
+                    <span>Monitoring Kuota Harian & Bulanan</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Award className="w-4 h-4 text-blue-400 shrink-0" />
+                    <span>Verifikasi Surat Rekomendasi Pemda</span>
+                  </li>
+                </ul>
               </div>
 
-              <div className="space-y-1">
-                <h2 className="text-lg font-black text-white group-hover:text-blue-400 transition">
-                  2. Portal Agen Penyalur Resmi
-                </h2>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Khusus Perusahaan Agen Penyalur Minyak Tanah Resmi (Menampilkan data pangkalan yang sudah berizin).
-                </p>
+              <div className="pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-blue-500 to-teal-500 group-hover:from-blue-400 group-hover:to-teal-400 text-slate-950 font-black rounded-xl text-xs shadow-md transition cursor-pointer"
+                >
+                  <span>{isAgenMode ? 'Masuk Portal Agen (Aktif)' : 'Masuk Portal Agen'}</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="relative bg-slate-900/50 border border-slate-800/60 rounded-3xl p-6 flex flex-col justify-between space-y-5 opacity-70">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="w-12 h-12 rounded-2xl bg-slate-800 text-slate-500 flex items-center justify-center shrink-0">
+                    <Lock className="w-6 h-6" />
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+                    Akses Terbatas
+                  </span>
+                </div>
+
+                <div className="space-y-1">
+                  <h2 className="text-lg font-black text-slate-300">
+                    2. Portal Agen Penyalur Resmi
+                  </h2>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Sesi Google saat ini ({currentUserEmail}) terdaftar sebagai Pengguna/Pemohon Publik.
+                  </p>
+                </div>
               </div>
 
-              {/* Feature Checklist */}
-              <ul className="space-y-2 pt-2 border-t border-slate-800 text-xs text-slate-300">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-blue-400 shrink-0" />
-                  <span>Daftar Pangkalan Berizin Disetujui</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Fuel className="w-4 h-4 text-blue-400 shrink-0" />
-                  <span>Monitoring Kuota Harian & Bulanan</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Award className="w-4 h-4 text-blue-400 shrink-0" />
-                  <span>Verifikasi Surat Rekomendasi Pemda</span>
-                </li>
-              </ul>
+              <div className="space-y-3">
+                <div className="p-3 bg-slate-950/80 rounded-xl border border-slate-800 text-slate-400 text-xs">
+                  Akses Portal Agen dinonaktifkan untuk email non-admin. Portal Agen hanya dapat diakses oleh Admin atau Agen Resmi yang terverifikasi.
+                </div>
+                <button
+                  type="button"
+                  disabled
+                  className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 bg-slate-800/80 text-slate-500 font-bold rounded-xl text-xs cursor-not-allowed border border-slate-700/60"
+                >
+                  <Lock className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Tombol Non-Aktif (Email Tidak Terdaftar)</span>
+                </button>
+              </div>
             </div>
-
-            <div className="pt-3 border-t border-slate-800">
-              <button
-                type="button"
-                className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-blue-500 to-teal-500 group-hover:from-blue-400 group-hover:to-teal-400 text-slate-950 font-black rounded-xl text-xs shadow-md transition cursor-pointer"
-              >
-                <span>{isAgenMode ? 'Masuk Portal Agen (Aktif)' : 'Masuk Portal Agen'}</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
-              </button>
-            </div>
-          </div>
+          )}
 
           {/* Card 3: Portal Admin Pemda Nagekeo */}
           {!isNonAdminEmailLogged ? (
