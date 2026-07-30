@@ -7,12 +7,14 @@ import {
   onAuthStateChanged,
   User,
 } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 import { safeLocalStorage } from './storage';
 
 // Initialize Firebase
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
+export const db = getFirestore(app);
 
 // Configure Google Provider with Sheets and Drive Scopes
 const googleProvider = new GoogleAuthProvider();

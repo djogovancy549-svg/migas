@@ -1,0 +1,26 @@
+{
+  "entities": {
+    "AdminSettings": {
+      "title": "AdminSettings",
+      "description": "Dynamic configuration list for authorized admin emails",
+      "type": "object",
+      "properties": {
+        "emails": {
+          "type": "array",
+          "description": "List of authorized administrator email addresses"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["emails"]
+    }
+  },
+  "firestore": {
+    "/settings/{settingsId}": {
+      "schema": "AdminSettings",
+      "description": "Global system settings documents"
+    }
+  }
+}

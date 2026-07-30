@@ -3,9 +3,9 @@ import { Pangkalan, PersyaratanStatus, MasterRequirementItem, UploadedDocument, 
 import { INITIAL_PANGKALAN_LIST, INITIAL_CHECKLIST_STATUS, INITIAL_AGEN_LIST, INITIAL_HET_LIST, PEMDA_INFO, DEFAULT_ADMIN_SHEET_ID, SUPER_ADMIN_EMAILS, DEFAULT_AUTHORIZED_ADMIN_EMAILS } from './data/pangkalanData';
 import { INITIAL_MASTER_REQUIREMENTS } from './data/masterRequirements';
 import { safeLocalStorage } from './lib/storage';
-import { initAuthListener } from './lib/googleAuth';
+import { initAuthListener, getCachedAccessToken, db } from './lib/googleAuth';
 import { fetchPangkalanFromGoogleSheets, clearGoogleSheets } from './lib/googleDriveSheetsService';
-import { getCachedAccessToken } from './lib/googleAuth';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { BellRing, X, FileSpreadsheet } from 'lucide-react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Header } from './components/Header';
@@ -243,6 +243,34 @@ export default function App() {
     );
     return () => unsubscribe();
   }, [authorizedAdminEmails]);
+
+  // Load and subscribe to authorizedAdminEmails from Firestore
+  useEffect(() => {
+    const docRef = doc(db, 'settings', 'admins');
+    const unsubscribe = onSnapshot(docRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (data && Array.isArray(data.emails)) {
+          const fetchedEmails = data.emails.map((e: string) => e.toLowerCase().trim());
+          const merged = Array.from(new Set([...SUPER_ADMIN_EMAILS.map(e => e.toLowerCase().trim()), ...fetchedEmails]));
+          setAuthorizedAdminEmails(merged);
+        }
+      } else {
+        // Document does not exist in Firestore yet, try to initialize it with defaults
+        const initialList = DEFAULT_AUTHORIZED_ADMIN_EMAILS.map(e => e.toLowerCase().trim());
+        setDoc(docRef, {
+          emails: initialList,
+          updatedAt: new Date().toISOString()
+        }).catch((err) => {
+          console.warn('Initializing default admins in Firestore skipped (requires super-admin session):', err);
+        });
+      }
+    }, (error) => {
+      console.warn('Firestore admins sub failed (requires sign-in):', error);
+    });
+
+    return () => unsubscribe();
+  }, [currentUserEmail]);
 
   // Auto fetch Google Sheets data on mount and when googleAccessToken is active
   useEffect(() => {
@@ -828,7 +856,18 @@ export default function App() {
               pimpinanJabatan={pimpinanInfo.jabatan}
               agenList={agenList}
               hetList={hetList}
-              onUpdateAuthorizedEmails={(updated) => setAuthorizedAdminEmails(updated)}
+              onUpdateAuthorizedEmails={async (updated) => {
+                setAuthorizedAdminEmails(updated);
+                try {
+                  const docRef = doc(db, 'settings', 'admins');
+                  await setDoc(docRef, {
+                    emails: updated.map(e => e.toLowerCase().trim()),
+                    updatedAt: new Date().toISOString()
+                  });
+                } catch (err) {
+                  console.error('Gagal memperbarui daftar admin di Firestore:', err);
+                }
+              }}
               onUpdatePimpinanInfo={(updated) => setPimpinanInfo(updated)}
               onUpdateAgenList={(updated) => setAgenList(updated)}
               onUpdateHetList={handleUpdateHetList}
