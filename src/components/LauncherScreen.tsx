@@ -219,94 +219,96 @@ export const LauncherScreen: React.FC<LauncherScreenProps> = ({
           </div>
 
           {/* Card 3: Portal Admin Pemda Nagekeo */}
-          {!isNonAdminEmailLogged ? (
-            <div
-              onClick={isAdminMode ? onEnterAsAdmin : onRequestAdminAuth}
-              className="group relative bg-slate-900/90 hover:bg-slate-900 border-2 border-slate-800 hover:border-emerald-500/60 rounded-3xl p-6 transition-all duration-300 shadow-xl hover:shadow-2xl hover:shadow-emerald-500/10 cursor-pointer flex flex-col justify-between space-y-5 transform hover:-translate-y-1"
-            >
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0 group-hover:scale-110 transition duration-300">
-                    <ShieldCheck className="w-6 h-6" />
+          {currentUserEmail && (
+            !isNonAdminEmailLogged ? (
+              <div
+                onClick={isAdminMode ? onEnterAsAdmin : onRequestAdminAuth}
+                className="group relative bg-slate-900/90 hover:bg-slate-900 border-2 border-slate-800 hover:border-emerald-500/60 rounded-3xl p-6 transition-all duration-300 shadow-xl hover:shadow-2xl hover:shadow-emerald-500/10 cursor-pointer flex flex-col justify-between space-y-5 transform hover:-translate-y-1"
+              >
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0 group-hover:scale-110 transition duration-300">
+                      <ShieldCheck className="w-6 h-6" />
+                    </div>
+                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                      <Lock className="w-3 h-3 text-emerald-400" />
+                      {isAdminMode ? 'Terverifikasi' : 'PIN Terproteksi'}
+                    </span>
                   </div>
-                  <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                    <Lock className="w-3 h-3 text-emerald-400" />
-                    {isAdminMode ? 'Terverifikasi' : 'PIN Terproteksi'}
-                  </span>
-                </div>
 
-                <div className="space-y-1">
-                  <h2 className="text-lg font-black text-white group-hover:text-emerald-400 transition">
-                    3. Portal Admin Pemda Nagekeo
-                  </h2>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    Khusus Petugas Bagian Perekonomian & SDA Setda Kab. Nagekeo.
-                  </p>
-                </div>
-
-                {/* Feature Checklist */}
-                <ul className="space-y-2 pt-2 border-t border-slate-800 text-xs text-slate-300">
-                  <li className="flex items-center gap-2">
-                    <Store className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span>Master Data & Kelola Daftar Agen</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <ShieldAlert className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span>Verifikasi Berkas & Penerbitan Rekomendasi</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Building2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span>Sinkron Google Sheet & Admin Email</span>
-                  </li>
-                </ul>
-              </div>
-
-              <div className="pt-3 border-t border-slate-800">
-                <button
-                  type="button"
-                  className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-emerald-500 to-teal-600 group-hover:from-emerald-400 group-hover:to-teal-500 text-slate-950 font-black rounded-xl text-xs shadow-md transition cursor-pointer"
-                >
-                  <span>{isAdminMode ? 'Masuk Portal Admin (Aktif)' : 'Masuk Portal Admin'}</span>
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="relative bg-slate-900/50 border border-slate-800/60 rounded-3xl p-6 flex flex-col justify-between space-y-5 opacity-75">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="w-12 h-12 rounded-2xl bg-slate-800 text-slate-500 flex items-center justify-center shrink-0">
-                    <Lock className="w-6 h-6" />
+                  <div className="space-y-1">
+                    <h2 className="text-lg font-black text-white group-hover:text-emerald-400 transition">
+                      3. Portal Admin Pemda Nagekeo
+                    </h2>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      Khusus Petugas Bagian Perekonomian & SDA Setda Kab. Nagekeo.
+                    </p>
                   </div>
-                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-rose-950 text-rose-400 border border-rose-900/30">
-                    Akses Terkunci
-                  </span>
+
+                  {/* Feature Checklist */}
+                  <ul className="space-y-2 pt-2 border-t border-slate-800 text-xs text-slate-300">
+                    <li className="flex items-center gap-2">
+                      <Store className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>Master Data & Kelola Daftar Agen</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <ShieldAlert className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>Verifikasi Berkas & Penerbitan Rekomendasi</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Building2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>Sinkron Google Sheet & Admin Email</span>
+                    </li>
+                  </ul>
                 </div>
 
-                <div className="space-y-1">
-                  <h2 className="text-lg font-black text-slate-400">
-                    3. Portal Admin Pemda Nagekeo
-                  </h2>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    Sesi akun Google saat ini (<span className="text-slate-300 font-bold">{currentUserEmail}</span>) terdaftar sebagai Pengguna/Pemohon Publik.
-                  </p>
+                <div className="pt-3 border-t border-slate-800">
+                  <button
+                    type="button"
+                    className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-emerald-500 to-teal-600 group-hover:from-emerald-400 group-hover:to-teal-500 text-slate-950 font-black rounded-xl text-xs shadow-md transition cursor-pointer"
+                  >
+                    <span>{isAdminMode ? 'Masuk Portal Admin (Aktif)' : 'Masuk Portal Admin'}</span>
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
+                  </button>
                 </div>
               </div>
+            ) : (
+              <div className="relative bg-slate-900/50 border border-slate-800/60 rounded-3xl p-6 flex flex-col justify-between space-y-5 opacity-75">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="w-12 h-12 rounded-2xl bg-slate-800 text-slate-500 flex items-center justify-center shrink-0">
+                      <Lock className="w-6 h-6" />
+                    </div>
+                    <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-rose-950 text-rose-400 border border-rose-900/30">
+                      Akses Terkunci
+                    </span>
+                  </div>
 
-              <div className="space-y-3">
-                <div className="p-3.5 bg-slate-950/80 rounded-xl border border-slate-850 text-slate-400 text-xs leading-relaxed">
-                  Akses ke Portal Admin dinonaktifkan secara otomatis karena email Anda tidak terdaftar sebagai admin resmi di Google Sheet Admin Pusat.
+                  <div className="space-y-1">
+                    <h2 className="text-lg font-black text-slate-400">
+                      3. Portal Admin Pemda Nagekeo
+                    </h2>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      Sesi akun Google saat ini (<span className="text-slate-300 font-bold">{currentUserEmail}</span>) terdaftar sebagai Pengguna/Pemohon Publik.
+                    </p>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  disabled
-                  className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 bg-slate-800/80 text-slate-500 font-bold rounded-xl text-xs cursor-not-allowed border border-slate-700/60"
-                >
-                  <Lock className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Tombol Dinonaktifkan (Email Non-Admin)</span>
-                </button>
+
+                <div className="space-y-3">
+                  <div className="p-3.5 bg-slate-950/80 rounded-xl border border-slate-850 text-slate-400 text-xs leading-relaxed">
+                    Akses ke Portal Admin dinonaktifkan secara otomatis karena email Anda tidak terdaftar sebagai admin resmi di Google Sheet Admin Pusat.
+                  </div>
+                  <button
+                    type="button"
+                    disabled
+                    className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 bg-slate-800/80 text-slate-500 font-bold rounded-xl text-xs cursor-not-allowed border border-slate-700/60"
+                  >
+                    <Lock className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Tombol Dinonaktifkan (Email Non-Admin)</span>
+                  </button>
+                </div>
               </div>
-            </div>
+            )
           )}
         </div>
 
