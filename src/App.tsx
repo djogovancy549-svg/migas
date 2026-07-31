@@ -13,6 +13,7 @@ import { TabNavigation, TabType } from './components/TabNavigation';
 import { GoogleSyncBar } from './components/GoogleSyncBar';
 import { LauncherScreen } from './components/LauncherScreen';
 import { DashboardView } from './components/DashboardView';
+import { AnalyticsDashboardView } from './components/AnalyticsDashboardView';
 import { PangkalanTableView } from './components/PangkalanTableView';
 import { SuratPermohonanView } from './components/SuratPermohonanView';
 import { SuratPernyataanView } from './components/SuratPernyataanView';
@@ -795,6 +796,16 @@ export default function App() {
             />
           )}
 
+          {activeTab === 'analytics' && isAdminMode && (
+            <AnalyticsDashboardView
+              pangkalanList={pangkalanList}
+              checklistData={checklistData}
+              agenList={agenList}
+              hetList={hetList}
+              rekomendasiMap={rekomendasiMap}
+            />
+          )}
+
           {activeTab === 'portal-agen' && (
             <AgenPortalView
               pangkalanList={pangkalanList}
@@ -880,6 +891,7 @@ export default function App() {
                   });
                 } catch (err) {
                   console.error('Gagal memperbarui daftar admin di Firestore:', err);
+                  throw err;
                 }
               }}
               onUpdatePimpinanInfo={(updated) => setPimpinanInfo(updated)}
