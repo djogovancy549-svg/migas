@@ -7,6 +7,7 @@ import {
   ClipboardCheck,
   Settings,
   Building2,
+  BarChart3,
   ChevronLeft,
   ChevronRight,
   LucideIcon,
@@ -14,6 +15,7 @@ import {
 
 export type TabType =
   | 'dashboard'
+  | 'analytics'
   | 'pangkalan'
   | 'surat-permohonan'
   | 'surat-pernyataan'
@@ -57,6 +59,11 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
       id: 'dashboard',
       label: 'Dashboard & Statistik',
       icon: LayoutDashboard,
+    },
+    {
+      id: 'analytics',
+      label: 'Analytics & DSS Eksekutif',
+      icon: BarChart3,
     },
     {
       id: 'pangkalan',
