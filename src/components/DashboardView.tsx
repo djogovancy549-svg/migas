@@ -5,7 +5,7 @@ import { Building2, MapPin, Fuel, FileCheck, FileWarning, ArrowRight, CheckCircl
 interface DashboardViewProps {
   pangkalanList: Pangkalan[];
   onSelectPangkalanForLetter: (pangkalan: Pangkalan, letterType: 'permohonan' | 'pernyataan') => void;
-  onGoToTab: (tab: 'pangkalan' | 'surat-permohonan' | 'surat-pernyataan' | 'persyaratan') => void;
+  onGoToTab: (tab: 'pangkalan' | 'surat-permohonan' | 'surat-pernyataan' | 'persyaratan' | 'analytics') => void;
   isAdminMode?: boolean;
   onApprovePangkalan?: (id: string) => void;
 }
@@ -112,6 +112,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </p>
 
           <div className="pt-2 flex flex-wrap gap-3">
+            {isAdminMode && (
+              <button
+                onClick={() => onGoToTab('analytics')}
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-500 hover:to-blue-600 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md transition cursor-pointer border border-sky-400/30"
+              >
+                <span>Buka Analytics & DSS Eksekutif</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            )}
             <button
               onClick={() => onGoToTab('pangkalan')}
               className="inline-flex items-center gap-2 bg-slate-950 hover:bg-slate-900 text-amber-400 font-bold px-4 py-2 rounded-xl text-xs shadow-md transition cursor-pointer"
